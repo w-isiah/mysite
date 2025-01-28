@@ -1,0 +1,189 @@
+{% extends "layouts/moderator_base.html" %}
+
+{% block title %} Add Assessment {% endblock %}
+
+{% block body_class %} moderator-sidebar-mini {% endblock %}
+
+{% block stylesheets %}
+<!-- External stylesheets for better layout and UI -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/select2/css/select2.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+<link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
+<link rel="stylesheet" href="/static/assets/css/mine.css">
+
+<!-- Custom Styles -->
+<style>
+  /* Custom Styles for the assessment page */
+  .card-header {
+    background-color: #007bff;
+    color: white;
+    border-bottom: 2px solid #0056b3;
+  }
+
+  .card-body {
+    padding: 30px;
+  }
+
+  .form-group input {
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+
+  .form-group label {
+    font-weight: bold;
+    color: #007bff;
+  }
+
+  .btn-sm {
+    padding: 8px 15px;
+    font-size: 14px;
+    border-radius: 20px;
+  }
+
+  .alert-container {
+    margin-top: 15px;
+  }
+
+  .alert-dismissible {
+    position: relative;
+  }
+
+  .alert-dismissible .close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+  }
+
+  .breadcrumb {
+    background: #f7f7f7;
+    border-radius: 5px;
+  }
+
+  .breadcrumb-item a {
+    color: #007bff;
+  }
+
+  .breadcrumb-item.active {
+    color: #6c757d;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="container-fluid">
+    
+    <!-- Flash Messages -->
+    <div class="row mb-2">
+      <div class="col-12">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="alert-container">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  <strong>{{ message }}</strong>
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- Page Header -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>Assessment</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="#">Home</a></li>
+              <li class="breadcrumb-item active">Assessment Data</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="card card-default">
+          <div class="card-header">
+            <h3 class="card-title">Check Student's Assessment</h3>
+          </div>
+          <div class="card-body">
+            
+            <!-- Form to check assessment -->
+            <form action="{{ url_for('assessment.check_student') }}" method="POST">
+              <!-- CSRF Token for security -->
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+              <div class="row">
+                <div class="col-md-8 offset-md-2">
+                  
+
+                  <!-- Registration Number Input -->
+                  <div class="form-group">
+                    <label for="reg_no">Enter Registration Number:</label>
+                    <input type="text" id="reg_no" name="reg_no" required class="form-control" placeholder="18/U/BCD/19908/PE">
+                    <small class="form-text text-muted">Registration Number Format: 18/U/BCD/19908/PE</small>
+                  </div>
+
+                  <!-- Form Buttons -->
+                  <div class="form-group text-center">
+                    <button type="submit" class="btn btn-success btn-sm">Submit</button>
+                    <button type="reset" class="btn btn-secondary btn-sm">Reset</button>
+                  </div>
+
+                </div>
+              </div>
+            </form>
+
+            <div class="text-center">
+              {% if student %}
+                <p><strong>Registration Number:</strong> <code>{{ student.reg_no }}</code></p>
+                <p><strong>Name:</strong> <code>{{ student.student_teacher }}</code></p>
+
+                {% if message %}
+                  <p class="alert alert-warning">{{ message }}</p>
+                  <h4>Assessment:  
+                    <a href="{{ url_for('assessment.assess_v1',student_id=student.id) }}" class="btn btn-warning btn-sm">
+                      <i class="icon-edit"></i> Assess
+                    </a></h4>
+                {% endif %}
+                <p><strong>Score:</strong> <code>{{ total }}%</code></p>
+              {% elif message %}
+                <p class="alert alert-warning">{{ message }}</p>
+              {% endif %}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/plugins/jquery/jquery.min.js"></script>
+<script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/assets/plugins/select2/js/select2.full.min.js"></script>
+<script src="/static/assets/js/adminlte.min.js"></script>
+
+<script>
+  $(function () {
+    // Initialize Select2 for dropdowns if needed
+    $('.select2').select2();
+  });
+</script>
+{% endblock javascripts %}
