@@ -17,13 +17,16 @@ def fetch_programmes_and_terms():
     conn.close()
     return programmes, terms
 
+
 @student_bp.route('/manage_students', methods=['GET', 'POST'])
 def manage_student():
     try:
+        # Database connection and fetching programmes and terms
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         programmes, terms = fetch_programmes_and_terms()
 
+        # Base query for student information
         query = """
             SELECT 
                 si.id AS student_id,
@@ -35,38 +38,46 @@ def manage_student():
             JOIN programmes p ON si.programme_id = p.id
             JOIN terms t ON si.term_id = t.id
         """
+
         params = []
 
         if request.method == 'POST':
             conditions = []
+
+            # Handle dynamic filtering
             if programme := request.form.get('programme'):
                 conditions.append("si.programme_id = %s")
                 params.append(programme)
+            
             if term := request.form.get('term'):
                 conditions.append("si.term_id = %s")
                 params.append(term)
+
             if reg_no := request.form.get('reg_no'):
                 conditions.append("si.reg_no LIKE %s")
                 params.append(f"%{reg_no}%")
 
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
-                cursor.execute(query, params)
-                student_info = cursor.fetchall()
-            else:
-                student_info = []
+
+            # Execute query with conditions
+            cursor.execute(query, params)
+            student_info = cursor.fetchall()
         else:
             student_info = []
 
         cursor.close()
         conn.close()
 
-        template = 'student/manage_student.html' if session['role'] == "Head OF Department" else 'student/assessor_manage_student.html'
+        # Selecting the correct template based on user role
+        template = 'student/manage_student.html' if session['role'] == "Head Of Department" else 'student/assessor_manage_student.html'
         return render_template(template, username=session['username'], role=session['role'],
                                student_info=student_info, programmes=programmes, terms=terms)
+    
     except Exception as e:
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
+
 
 
 
@@ -121,12 +132,6 @@ def add_student():
             return render_template('student/add_student.html', programmes=programmes, terms=terms)
 
     return render_template('student/add_student.html', programmes=programmes, terms=terms)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
 
 
 

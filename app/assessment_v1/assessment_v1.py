@@ -187,7 +187,18 @@ def assess_v1(student_id):
     if role0 == 'Head OF Department':
         return render_template('assessment_v1/add_assessment.html',username=session['username'],role=session['role'], student_id=student_id, data=data, student=student)
     elif role0 == 'School Practice Supervisor':
+  
+
         return render_template('assessment_v1/assessor/add_assessment.html', username=session['username'],role=session['role'],student_id=student_id, data=data, student=student)
+
+
+
+
+
+
+
+
+
 
 @assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
 def assessment_report():
@@ -200,7 +211,7 @@ def assessment_report():
         cursor.execute("SELECT id, programme_name FROM programmes")
         programmes = cursor.fetchall()
 
-        cursor.execute("SELECT id, term, year FROM terms ORDER BY year, term")
+        cursor.execute("SELECT id, term FROM terms ORDER BY term")
         terms = cursor.fetchall()
 
         # Initialize variables
@@ -224,7 +235,6 @@ def assessment_report():
                     si.student_teacher AS student_name,
                     si.subject,
                     t.term,
-                    t.year,
                     u.username AS assessor,
                     COALESCE(ROUND((SUM(s.score) / (
                         SELECT 3 * COUNT(*) 
@@ -261,7 +271,7 @@ def assessment_report():
             # Finalize query with grouping
             query += """
                 GROUP BY
-                    si.id, si.reg_no, si.student_teacher, si.subject, t.term, t.year, u.username
+                    si.id, si.reg_no, si.student_teacher, si.subject, t.term, u.username
                 ORDER BY si.reg_no
             """
 
@@ -278,7 +288,7 @@ def assessment_report():
 
                 # Pivot data: assessors as columns
                 pivot_table = df.pivot_table(
-                    index=["reg_no", "student_name", "subject", "term", "year", "status"],
+                    index=["reg_no", "student_name", "subject", "term", "status"],
                     columns="assessor",
                     values="total_score",
                     aggfunc="max",
@@ -288,7 +298,7 @@ def assessment_report():
                 # Add average score
                 score_columns = [
                     col for col in pivot_table.columns
-                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'year', 'status']
+                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'status']
                 ]
                 pivot_table['average_score'] = pivot_table[score_columns].replace(0, pd.NA).mean(axis=1)
 

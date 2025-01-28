@@ -20,8 +20,12 @@ from app.aspects.aspects  import aspects_bp
 from app.aspect_questions.aspect_questions import aspect_qns_bp
 from app.assessment_v1.assessment_v1 import assessment_bp
 from app.scores.scores import scores_bp
+from app.programmes.programmes import programmes_bp
+from app.terms.terms  import term_bp
 
 # Register blueprints
+app.register_blueprint(term_bp,url_prefix='/terms')
+app.register_blueprint(programmes_bp,url_prefix='/programmes')
 app.register_blueprint(scores_bp,url_prefix='/scores')
 app.register_blueprint(assessment_bp,url_prefix='/assessment')
 app.register_blueprint(aspect_qns_bp,url_prefix='/aspect_qns')

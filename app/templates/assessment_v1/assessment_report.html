@@ -19,6 +19,7 @@
 <!-- Custom Styles -->
 <link rel="stylesheet" href="/static/assets/css/mine.css">
 {% endblock stylesheets %}
+
 {% block content %}
 <div class="content-wrapper">
   <div class="container-fluid">
@@ -63,7 +64,7 @@
           <option value="">Select Term</option>
           {% for term in terms %}
             <option value="{{ term.id }}" {% if term.id == term_id %} selected {% endif %}>
-              {{ term.term }} - {{ term.year }}
+              {{ term.term }}
             </option>
           {% endfor %}
         </select>
@@ -84,7 +85,7 @@
       </div>
       <div class="card-body">
         <form method="POST">
-           <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
           <button type="submit" name="export_excel" class="btn btn-primary mb-3">Export to Excel</button>
         </form>
         <table id="assessment-table" class="table table-bordered table-striped">
