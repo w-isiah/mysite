@@ -70,8 +70,13 @@ def manage_users():
         # Get DB connection using context manager
         with get_db_connection() as connection:
             with connection.cursor(dictionary=True) as cursor:
-                cursor.execute("SELECT * FROM users WHERE role != 'admin'")
-                users = cursor.fetchall()
+                if session['role']=='admin':
+                    cursor.execute("SELECT * FROM users WHERE role != 'admin'")
+                    users = cursor.fetchall()
+                elif session['role']=='Head OF Department':
+                    cursor.execute("SELECT * FROM users WHERE role != 'admin' and role !='Head OF Department'")
+                    users = cursor.fetchall()
+
 
                 # Get the count of users that are not admins
                 num = len(users)
