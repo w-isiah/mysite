@@ -8,11 +8,11 @@ import mysql.connector
 users_bp = Blueprint('auth', __name__)
 
 # Ensure the Flask app secret key is set to manage sessions
-# Add this in your Flask app initialization, for example:
 # app.secret_key = 'your_secret_key'
 
 # Set session lifetime to 30 minutes (can be configured based on needs)
-'''users_bp.before_app_request
+''''
+@users_bp.before_app_request
 def check_session_timeout():
     if 'loggedin' in session:
         last_activity = session.get('last_activity', datetime.utcnow())
@@ -24,6 +24,7 @@ def check_session_timeout():
 
         # Update the session's last activity time
         session['last_activity'] = datetime.utcnow()'''
+
 
 @users_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -37,17 +38,20 @@ def login():
                 cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
                 user = cursor.fetchone()
 
-                if user and check_password_hash(user['password'], password):
-                    session['loggedin'] = True
-                    session['id'] = user['id']
-                    session['username'] = user['username']
-                    session['role'] = user['role']
-                    session.permanent = True  # Make session permanent
-                    session['last_activity'] = datetime.utcnow()  # Set last activity time
-                    flash('Login successful!', 'success')
-                    return redirect(url_for('main.index'))  # Redirect to the main page
+                if user:
+                    if check_password_hash(user['password'], password):
+                        session['loggedin'] = True
+                        session['id'] = user['id']
+                        session['username'] = user['username']
+                        session['role'] = user['role']
+                        session.permanent = True  # Make session permanent
+                        session['last_activity'] = datetime.utcnow()  # Set last activity time
+                        flash('Login successful!', 'success')
+                        return redirect(url_for('main.index'))  # Redirect to the main page
+                    else:
+                        flash('Invalid password.', 'danger')
                 else:
-                    flash('Invalid username or password.', 'danger')
+                    flash('Invalid username.', 'danger')
 
     return render_template('accounts/login.html')
 
@@ -61,28 +65,24 @@ def logout():
 
 @users_bp.route('/manage_users')
 def manage_users():
-    if 'role' not in session or session['role'] != 'admin':
-        flash('You are not authorized to access this page.', 'danger')
-        return redirect(url_for('main.index'))
-
+   
     try:
         # Get DB connection using context manager
         with get_db_connection() as connection:
             with connection.cursor(dictionary=True) as cursor:
-                # Fetch all users that are not admins
                 cursor.execute("SELECT * FROM users WHERE role != 'admin'")
                 users = cursor.fetchall()
 
                 # Get the count of users that are not admins
-                cursor.execute("SELECT COUNT(*) FROM users WHERE role != 'admin'")
-                num = cursor.fetchone()  # Extract count value from the tuple
+                num = len(users)
 
     except Exception as e:
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
-
-    # Safely access session variables
-    return render_template('accounts/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
+    if session['role']=='admin':
+        return render_template('accounts/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
+    elif session['role']=='Head OF Department':
+        return render_template('accounts/moderator/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
 
 
 @users_bp.route('/api/manage_users_count', methods=['GET'])
@@ -91,7 +91,6 @@ def get_users_count():
         # Get DB connection using context manager
         with get_db_connection() as connection:
             with connection.cursor(dictionary=True) as cursor:
-                # Get the count of users that are not admins
                 cursor.execute("SELECT COUNT(*) FROM users WHERE role != 'admin'")
                 num = cursor.fetchone()[0]  # Extract count value from the tuple
 
@@ -99,15 +98,12 @@ def get_users_count():
         return jsonify({"count": num})
 
     except Exception as e:
-        # Handle any errors and return a failure message
         return jsonify({"error": f"An error occurred while fetching data: {str(e)}"}), 500
 
 
 @users_bp.route('/add_user', methods=['GET', 'POST'])
 def add_user():
-    if 'role' not in session or session['role'] != 'admin':
-        flash('You are not authorized to access this page.', 'danger')
-        return redirect(url_for('main.index'))
+    
 
     if request.method == 'POST':
         username = request.form['username']
@@ -135,16 +131,15 @@ def add_user():
                     flash(f'Error: {err}', 'danger')
 
         return redirect(url_for('auth.manage_users'))  # Redirect to user management page
-
-    return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))  # Render the add user form
+    if session['role']=='admin':
+        return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))  #
+    elif session['role']=='Head OF Department':
+        return render_template('accounts/moderator/add_user.html', role=session.get('role'), username=session.get('username'))  # Render the a Render the add user form
 
 
 @users_bp.route('/edit_user/<int:id>', methods=['GET', 'POST'])
 def edit_user(id):
-    if 'role' not in session or session['role'] != 'admin':
-        flash('You are not authorized to access this page.', 'danger')
-        return redirect(url_for('main.index'))
-
+    
     # Get DB connection using context manager
     with get_db_connection() as connection:
         with connection.cursor(dictionary=True) as cursor:
@@ -152,9 +147,14 @@ def edit_user(id):
                 username = request.form['username']
                 password = request.form['password']
                 role = request.form['role']
-                
+
                 # Password hashing for security
-                hashed_password = generate_password_hash(password)
+                if password:
+                    hashed_password = generate_password_hash(password)
+                else:
+                    # Don't change the password if not provided
+                    cursor.execute('SELECT password FROM users WHERE id = %s', (id,))
+                    hashed_password = cursor.fetchone()['password']
 
                 try:
                     # Update user information in the database
@@ -162,11 +162,9 @@ def edit_user(id):
                                    (username, hashed_password, role, id))
                     connection.commit()
 
-                    # Flash success message
                     flash('User updated successfully!', 'success')
 
                 except mysql.connector.Error as err:
-                    # Flash error message if something goes wrong with the database query
                     flash(f'Error: {err}', 'danger')
 
                 return redirect(url_for('auth.manage_users'))
@@ -174,15 +172,15 @@ def edit_user(id):
             # If the request method is GET, retrieve the user's data
             cursor.execute('SELECT * FROM users WHERE id = %s', (id,))
             user = cursor.fetchone()
+    if session['role']=='admin':
+        return render_template('accounts/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
+    elif session['role']=='Head OF Department':
+        return render_template('accounts/moderator/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
 
-    return render_template('accounts/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
 
 
 @users_bp.route('/delete_user/<int:id>', methods=['GET'])
 def delete_user(id):
-    if 'role' not in session or session['role'] != 'admin':
-        flash('You are not authorized to access this page.', 'danger')
-        return redirect(url_for('main.index'))
 
     # Get DB connection using context manager
     with get_db_connection() as connection:

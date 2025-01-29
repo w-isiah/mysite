@@ -32,7 +32,4 @@ app.register_blueprint(aspect_qns_bp,url_prefix='/aspect_qns')
 app.register_blueprint(aspects_bp, url_prefix='/aspects')
 app.register_blueprint(student_bp, url_prefix='/student')
 app.register_blueprint(users_bp, url_prefix='/users')
-app.register_blueprint(main_bp, url_prefix='/')
-
-
-
+app.register_blueprint(main_bp, url_prefix='/')  					
