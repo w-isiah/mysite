@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session,jsonify
 from app.db import get_db_connection
 
 # Initialize blueprint
@@ -28,16 +28,22 @@ def manage_student():
 
         # Base query for student information
         query = """
-            SELECT 
-                si.id AS student_id,
-                si.student_teacher, si.year AS student_year, si.reg_no, si.subject,
-                si.class_name, si.topic, si.subtopic, si.teaching_time,
-                p.programme_name, p.description AS programme_description,
-                t.term, t.year AS term_year
-            FROM student_info si
-            JOIN programmes p ON si.programme_id = p.id
-            JOIN terms t ON si.term_id = t.id
-        """
+                SELECT 
+                    si.id AS student_id,
+                    si.student_teacher,  
+                    si.reg_no, 
+                    si.subject,
+                    si.class_name, 
+                    si.topic, 
+                    si.subtopic, 
+                    si.teaching_time,
+                    p.programme_name, 
+                    p.description AS programme_description,
+                    t.term
+                FROM student_info si
+                JOIN programmes p ON si.programme_id = p.id
+                JOIN terms t ON si.term_id = t.id
+            """
 
         params = []
 
@@ -60,14 +66,24 @@ def manage_student():
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
 
-            # Execute query with conditions
+            # Debug: Print the query and parameters to ensure correctness
+            print("Executing Query:", query)
+            print("With Parameters:", params)
+
             cursor.execute(query, params)
             student_info = cursor.fetchall()
+
+            # Debug: Check the fetched data
+            print("Fetched Student Info:", student_info)
+
         else:
             student_info = []
 
         cursor.close()
         conn.close()
+
+        # Ensure that student_info is being passed correctly to the template
+        print("Student Info for Rendering:", student_info)
 
         # Selecting the correct template based on user role
         template = 'student/manage_student.html' if session['role'] == "Head Of Department" else 'student/assessor_manage_student.html'
@@ -75,8 +91,11 @@ def manage_student():
                                student_info=student_info, programmes=programmes, terms=terms)
     
     except Exception as e:
+        # Log the error for debugging and provide feedback to the user
+        print(f"Error occurred: {str(e)}")  # Debug: Log error
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
+
 
 
 
@@ -453,3 +472,42 @@ def register_student(student_id):
     return redirect(url_for('student.manage_student'))
 
 
+
+
+@student_bp.route('/manage_students_api', methods=['GET'])
+def manage_student_api():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        if request.method == 'GET':
+            # Base query for student information
+            query = """
+                SELECT 
+                    si.id AS student_id,
+                    si.student_teacher,  
+                    si.reg_no, 
+                    si.subject,
+                    si.class_name, 
+                    si.topic, 
+                    si.subtopic, 
+                    si.teaching_time,
+                    p.programme_name, 
+                    p.description AS programme_description,
+                    t.term
+                FROM student_info si
+                JOIN programmes p ON si.programme_id = p.id
+                JOIN terms t ON si.term_id = t.id
+            """
+
+            # Execute the query to fetch all students
+            cursor.execute(query)
+            students = cursor.fetchall()
+
+            return jsonify({'students': students}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()

@@ -136,7 +136,7 @@
                                     <tbody>
                                         {% for student in student_info %}
                                             <tr>
-                                                <td>{{ student.student_teacher }}</td>
+                                                <td>{{ student.student_teacher }}</td> <!-- Added 'or N/A' to handle None values -->
                                                 <td>{{ student.term }}</td>
                                                 <td>{{ student.subject }}</td>
                                                 <td>{{ student.reg_no }}</td>
