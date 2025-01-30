@@ -22,8 +22,12 @@ from app.assessment_v1.assessment_v1 import assessment_bp
 from app.scores.scores import scores_bp
 from app.programmes.programmes import programmes_bp
 from app.terms.terms  import term_bp
-
+from app.school_category.school_category import school_category_bp
+from app.schools.schools  import schools_bp
 # Register blueprints
+
+app.register_blueprint(schools_bp,url_prefix='/schools')
+app.register_blueprint(school_category_bp,url_prefix='/school_category')
 app.register_blueprint(term_bp,url_prefix='/terms')
 app.register_blueprint(programmes_bp,url_prefix='/programmes')
 app.register_blueprint(scores_bp,url_prefix='/scores')
@@ -32,4 +36,4 @@ app.register_blueprint(aspect_qns_bp,url_prefix='/aspect_qns')
 app.register_blueprint(aspects_bp, url_prefix='/aspects')
 app.register_blueprint(student_bp, url_prefix='/student')
 app.register_blueprint(users_bp, url_prefix='/users')
-app.register_blueprint(main_bp, url_prefix='/')  					
+app.register_blueprint(main_bp, url_prefix='/') 
