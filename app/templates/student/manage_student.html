@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="/static/assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
 <link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
 <link rel="stylesheet" href="/static/assets/css/mine.css">
+<!-- Include Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock stylesheets %}
 
 {% block content %}
@@ -72,8 +74,8 @@
                                     <!-- Programme Dropdown -->
                                     <div class="form-group mr-2">
                                         <label for="programme" class="mr-2">Programme:</label>
-                                        <select name="programme" id="programme" class="form-control">
-                                            <option value="">Select Programme</option>
+                                        <select name="programme" id="programme" class="form-control select2">
+                                            <option value="" selected disabled="selected">Select Programme</option>
                                             {% for programme in programmes %}
                                                 <option value="{{ programme.id }}" 
                                                     {% if request.form.get('programme') == programme.id %} selected {% endif %}>
@@ -86,7 +88,7 @@
                                     <!-- Term Dropdown -->
                                     <div class="form-group mr-2">
                                         <label for="term" class="mr-2">Term:</label>
-                                        <select name="term" id="term" class="form-control">
+                                        <select name="term" id="term" class="form-control select2">
                                             <option value="">Select Term</option>
                                             {% for term in terms %}
                                                 <option value="{{ term.id }}" 
@@ -183,8 +185,14 @@
 <script src="/static/assets/js/adminlte.js"></script>
 <script src="/static/assets/js/mine.js"></script>
 
+<!-- Include Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
 <script>
   $(function () {
+     // Initialize Select2 on both programme and term dropdowns
+     $('.select2').select2();
+
     $("#example1").DataTable({
       "responsive": true,
       "autoWidth": false,

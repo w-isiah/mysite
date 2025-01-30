@@ -41,8 +41,8 @@ def manage_student():
                     p.description AS programme_description,
                     t.term
                 FROM student_info si
-                JOIN programmes p ON si.programme_id = p.id
-                JOIN terms t ON si.term_id = t.id
+                LEFT JOIN programmes p ON si.programme_id = p.id
+               LEFT JOIN terms t ON si.term_id = t.id
             """
 
         params = []
@@ -237,16 +237,22 @@ def manage_student():
 
         # Base SQL query to retrieve student details
         query = """
-            SELECT 
-                si.id AS student_id,
-                si.student_teacher AS student_year, si.reg_no, si.subject,
-                si.class_name, si.topic, si.subtopic, si.teaching_time,
-                p.programme_name, p.description AS programme_description,
-                t.term, t.year AS term_year
-            FROM student_info si
-            JOIN programmes p ON si.programme_id = p.id
-            JOIN terms t ON si.term_id = t.id
-        """
+                SELECT 
+                    si.id AS student_id,
+                    si.student_teacher,  
+                    si.reg_no, 
+                    si.subject,
+                    si.class_name, 
+                    si.topic, 
+                    si.subtopic, 
+                    si.teaching_time,
+                    p.programme_name, 
+                    p.description AS programme_description,
+                    t.term
+                FROM student_info si
+                JOIN programmes p ON si.programme_id = p.id
+                JOIN terms t ON si.term_id = t.id
+            """
         params = []
 
         # Handle POST request to filter students
@@ -283,6 +289,47 @@ def manage_student():
         # Handle errors gracefully
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
+
+
+
+@student_bp.route('/manage_students_api', methods=['GET'])
+def manage_student_api():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        if request.method == 'GET':
+            # Base query for student information
+            query = """
+                SELECT 
+                    si.id AS student_id,
+                    si.student_teacher,  
+                    si.reg_no, 
+                    si.subject,
+                    si.class_name, 
+                    si.topic, 
+                    si.subtopic, 
+                    si.teaching_time,
+                    p.programme_name, 
+                    p.description AS programme_description,
+                    t.term
+                FROM student_info si
+                JOIN programmes p ON si.programme_id = p.id
+                JOIN terms t ON si.term_id = t.id
+            """
+
+            # Execute the query to fetch all students
+            cursor.execute(query)
+            students = cursor.fetchall()
+
+            return jsonify({'students': students}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 
 
 
@@ -474,40 +521,3 @@ def register_student(student_id):
 
 
 
-@student_bp.route('/manage_students_api', methods=['GET'])
-def manage_student_api():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        if request.method == 'GET':
-            # Base query for student information
-            query = """
-                SELECT 
-                    si.id AS student_id,
-                    si.student_teacher,  
-                    si.reg_no, 
-                    si.subject,
-                    si.class_name, 
-                    si.topic, 
-                    si.subtopic, 
-                    si.teaching_time,
-                    p.programme_name, 
-                    p.description AS programme_description,
-                    t.term
-                FROM student_info si
-                JOIN programmes p ON si.programme_id = p.id
-                JOIN terms t ON si.term_id = t.id
-            """
-
-            # Execute the query to fetch all students
-            cursor.execute(query)
-            students = cursor.fetchall()
-
-            return jsonify({'students': students}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()

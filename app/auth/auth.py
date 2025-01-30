@@ -74,7 +74,7 @@ def manage_users():
                     cursor.execute("SELECT * FROM users WHERE role != 'admin'")
                     users = cursor.fetchall()
                 elif session['role']=='Head OF Department':
-                    cursor.execute("SELECT * FROM users WHERE role != 'admin' and role !='Head OF Department'")
+                    cursor.execute("SELECT * FROM users WHERE role != 'admin' and role !='Head OF Department' and role != 'Dean'")
                     users = cursor.fetchall()
 
 
