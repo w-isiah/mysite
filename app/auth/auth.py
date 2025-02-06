@@ -73,8 +73,8 @@ def manage_users():
                 if session['role']=='admin':
                     cursor.execute("SELECT * FROM users WHERE role != 'admin'")
                     users = cursor.fetchall()
-                elif session['role']=='Head OF Department':
-                    cursor.execute("SELECT * FROM users WHERE role != 'admin' and role !='Head OF Department' and role != 'Dean'")
+                elif session['role']=='Head of Department':
+                    cursor.execute("SELECT * FROM users WHERE role != 'admin' and role !='Head of Department' and role != 'Dean'")
                     users = cursor.fetchall()
 
 
@@ -86,7 +86,7 @@ def manage_users():
         return redirect(url_for('main.index'))
     if session['role']=='admin':
         return render_template('accounts/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
-    elif session['role']=='Head OF Department':
+    elif session['role']=='Head of Department':
         return render_template('accounts/moderator/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
 
 
@@ -138,7 +138,7 @@ def add_user():
         return redirect(url_for('auth.manage_users'))  # Redirect to user management page
     if session['role']=='admin':
         return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))  #
-    elif session['role']=='Head OF Department':
+    elif session['role']=='Head of Department':
         return render_template('accounts/moderator/add_user.html', role=session.get('role'), username=session.get('username'))  # Render the a Render the add user form
 
 
@@ -179,7 +179,7 @@ def edit_user(id):
             user = cursor.fetchone()
     if session['role']=='admin':
         return render_template('accounts/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
-    elif session['role']=='Head OF Department':
+    elif session['role']=='Head of Department':
         return render_template('accounts/moderator/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
 
 

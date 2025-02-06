@@ -21,7 +21,7 @@ def assessment_check():
     username=session['username']
     role0=session['role']
     role2='School Practice Supervisor'
-    role1='Head OF Department'
+    role1='Head OF Deaprtment'
     assessor_id = session.get('id')
     
     if not assessor_id:
@@ -68,9 +68,13 @@ def assessment_check():
 
 
 
+
+
+
 @assessment_bp.route('/check_student', methods=['GET', 'POST'])
 def check_student():
     role = session.get('role')  # Get the logged-in user's role
+    role = role.strip()
     user_id = session.get('id')  # Get the logged-in user's ID
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
@@ -82,68 +86,87 @@ def check_student():
         if request.method == 'POST':
             reg_no = request.form.get('reg_no')  # Get registration number from form input
 
-            # Fetch student details
+            # Fetch student details from the student_info table
             cursor.execute("SELECT * FROM student_info WHERE reg_no = %s", (reg_no,))
             student = cursor.fetchone()
 
             if not student:
-                return render_student_template(role, message="No student found with the given registration number.")
+                if role == "Head of Department":
+                    return render_template('student_assessment/check_student_2.html', role=role, message="No student found with the given registration number.")
+                else:
+                    return render_template('student_assessment/assessor/check_student_2.html', role=role, message="No student found with the given registration number.")
 
-            # Fetch scores for the student assessed by the logged-in user
+            # Fetch student marks ONLY for the logged-in assessor
             cursor.execute("""
-                SELECT si.student_teacher, SUM(s.score) AS score
-                FROM student_info si
-                JOIN scores s ON si.id = s.student_id
-                JOIN users u ON s.assessor_id = u.id
-                WHERE si.reg_no = %s AND u.id = %s
-                GROUP BY si.student_teacher
-            """, (reg_no, user_id))
-            mark = cursor.fetchone()
+                SELECT * FROM marks 
+                WHERE student_id = %s AND assessor_id = %s
+            """, (student['id'], user_id))  # Filter by assessor_id
+            student_marks = cursor.fetchall()
 
-            # Fetch the maximum possible score for the student
-            cursor.execute("""
-                SELECT 3 * COUNT(*) AS max_score
-                FROM scores
-                WHERE assessor_id = %s AND student_id = %s
-            """, (user_id, student['id']))
-            max_score_data = cursor.fetchone()
-            max_score = max_score_data['max_score'] if max_score_data else 0
+            # Get term IDs from student_info for the student
+            cursor.execute("SELECT DISTINCT term_id FROM student_info WHERE reg_no = %s", (reg_no,))
+            student_terms = cursor.fetchall()
+            student_term_ids = [term['term_id'] for term in student_terms]
 
-            if mark and mark.get('score') is not None:
-                # Calculate the percentage score
-                score = mark['score']
-                total_percentage = (score / max_score) * 100 if max_score > 0 else 0
-                total = round(min(total_percentage, 100), 2)  # Cap the percentage to 100
-                logging.info(f"Score: {score}, Max Score: {max_score}, Percentage: {total_percentage}")
-                return render_student_template(role, student=student, mark=mark, total=total)
+            # If no marks are found, mark the student as "Not Assessed"
+            if not student_marks:
+                if role == "Head of Department":
+                    return render_template('student_assessment/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
+                else:
+                    return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
+
+            # Prepare results for each term (fetch term and marks)
+            results = []
+            all_term_ids = sorted(set(student_term_ids + [mark['term_id'] for mark in student_marks]))  # All unique term IDs (from student_info and marks)
+
+            for term in all_term_ids:
+                result = {
+                    'term_id': term,
+                    'message': 'Not Assessed',  # Default message
+                    'marks': None  # Initially, marks are None if not assessed
+                }
+
+                # Find matching mark for each term
+                for mark in student_marks:
+                    if mark['term_id'] == term:
+                        result['marks'] = mark['marks']
+                        result['assessment_type'] = mark['assessment_type']
+                        result['date_awarded'] = mark['date_awarded']
+                        result['message'] = 'Assessed'  # Mark as assessed if marks exist
+                        break
+
+                results.append(result)
+
+            # Return the template with results
+            if role == "Head of Department":
+                return render_template('student_assessment/check_student_2.html', username=session['username'], role=role, student=student, results=results)
             else:
-                return render_student_template(role, student=student, message="No scores found for this student.")
+                return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role, student=student, results=results)
 
-        # Handle GET requests
-        return render_student_template(role)
+        # Handle GET requests (show the initial form)
+        if role == "Head of Department":
+            return render_template('student_assessment/check_student_2.html', username=session['username'], role=role)
+        else:
+            return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role)
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
-        return render_student_template(role, message="An error occurred while processing the request.")
+        flash("An error occurred while processing the request.", "danger")
+        if role == "Head of Department":
+            return render_template('student_assessment/check_student_2.html', username=session['username'], role=role)
+        else:
+            return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role)
     finally:
         cursor.close()
         connection.close()
 
 
 
-def render_student_template(role, **kwargs):
-    """
-    Helper function to render templates based on the user's role.
-    """
-    template_base = 'student_assessment'
-    if role == 'Head OF Department':
-        template = f'{template_base}/check_student.html'
-    elif role == 'School Practice Supervisor':
-        template = f'{template_base}/assessor/check_student.html'
-    else:
-        return redirect(url_for('auth.login'))
 
-    return render_template(template, username=session.get('username'), role=role, **kwargs)
+
+
+
+
 
 
 
@@ -167,6 +190,9 @@ def assess_v1(student_id):
             cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
             student = cursor.fetchone()
 
+            cursor.execute("SELECT * FROM schools")
+            schools = cursor.fetchall()
+
         # Check if the student exists
         if not student:
             return "Student not found", 404  # Return a 404 error if the student does not exist
@@ -184,12 +210,22 @@ def assess_v1(student_id):
         conn.close()  # Close the database connection
 
     # Render the template with the fetched data
-    if role0 == 'Head OF Department':
-        return render_template('assessment_v1/add_assessment.html',username=session['username'],role=session['role'], student_id=student_id, data=data, student=student)
-    elif role0 == 'School Practice Supervisor':
-  
+    if session['role'] == 'Head OF Deaprtment':
+        return render_template('assessment_v1/add_assessment.html',schools=schools,username=session['username'],role=session['role'], student_id=student_id, data=data, student=student)
+    else:
 
-        return render_template('assessment_v1/assessor/add_assessment.html', username=session['username'],role=session['role'],student_id=student_id, data=data, student=student)
+        return render_template('assessment_v1/assessor/add_assessment.html',schools=schools, username=session['username'],role=session['role'],student_id=student_id, data=data, student=student)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -227,7 +263,7 @@ def assessment_report():
             term_id = request.form.get('term_id')
             reg_no = request.form.get('reg_no')
 
-            # SQL query to fetch assessment data, including students without assessments
+            # SQL query to fetch assessment data
             query = """
                 SELECT
                     si.id AS student_id,
@@ -236,21 +272,17 @@ def assessment_report():
                     si.subject,
                     t.term,
                     u.username AS assessor,
-                    COALESCE(ROUND((SUM(s.score) / (
-                        SELECT 3 * COUNT(*) 
-                        FROM scores 
-                        WHERE assessor_id = u.id AND student_id = si.id
-                    )) * 100, 2), 0) AS total_score,
+                    m.marks,
                     CASE
-                        WHEN SUM(s.score) IS NULL THEN 'Not Assessed'
+                        WHEN m.marks IS NULL THEN 'Not Assessed'
                         ELSE 'Assessed'
                     END AS status
                 FROM
                     student_info si
                 LEFT JOIN
-                    scores s ON si.id = s.student_id
+                    marks m ON si.id = m.student_id
                 LEFT JOIN
-                    users u ON s.assessor_id = u.id
+                    users u ON m.assessor_id = u.id
                 LEFT JOIN
                     terms t ON si.term_id = t.id
                 WHERE 1=1
@@ -268,10 +300,8 @@ def assessment_report():
                 query += " AND si.reg_no LIKE %s"
                 filters.append(f"%{reg_no}%")
 
-            # Finalize query with grouping
+            # Finalize query with grouping by student and term
             query += """
-                GROUP BY
-                    si.id, si.reg_no, si.student_teacher, si.subject, t.term, u.username
                 ORDER BY si.reg_no
             """
 
@@ -290,7 +320,7 @@ def assessment_report():
                 pivot_table = df.pivot_table(
                     index=["reg_no", "student_name", "subject", "term", "status"],
                     columns="assessor",
-                    values="total_score",
+                    values="marks",
                     aggfunc="max",
                     fill_value=0
                 ).reset_index()

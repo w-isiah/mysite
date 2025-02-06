@@ -12,6 +12,15 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=3000)
 csrf = CSRFProtect(app)
 
 
+
+# Allowed file extensions
+
+
+# Path to save uploaded files (you can change this as needed)
+UPLOAD_FOLDER = 'uploads/'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
 # Import blueprints
 from app.auth.auth import users_bp
 from app.main.main import main_bp
@@ -24,8 +33,10 @@ from app.programmes.programmes import programmes_bp
 from app.terms.terms  import term_bp
 from app.school_category.school_category import school_category_bp
 from app.schools.schools  import schools_bp
+from app.moderate.moderate import moderate_bp
 # Register blueprints
 
+app.register_blueprint(moderate_bp,url_prefix='/moderate')
 app.register_blueprint(schools_bp,url_prefix='/schools')
 app.register_blueprint(school_category_bp,url_prefix='/school_category')
 app.register_blueprint(term_bp,url_prefix='/terms')

@@ -7,12 +7,16 @@ import mysql.connector
 # Initialize the blueprint
 scores_bp = Blueprint('scores', __name__)
 
+from flask import session, flash, redirect, url_for, render_template, request
+import logging
 
-
+from flask import session, flash, redirect, url_for, render_template, request
+import logging
 
 @scores_bp.route("/save_scores", methods=["POST"])
 def save_scores():
     role0 = session.get('role')
+    
     # Ensure the user is logged in by checking the session
     if "id" not in session:
         flash("You must be logged in to submit scores.", "danger")
@@ -20,21 +24,25 @@ def save_scores():
 
     # Connect to the database
     conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
     try:
         # Get form data
         assessor_id = session["id"]
         student_id = request.form.get("student_teacher_id")
         term_id = request.form.get("term_id")
+        school_id = request.form.get("school_id")
+
+        print(f"Received data: student_id={student_id}, term_id={term_id}, school_id={school_id}")
 
         # Get the list of aspect ids, scores, comments, and criteria ids
-        aspect_ids = request.form.getlist("aspect_id[]")  # List of aspect IDs
-        scores = request.form.getlist("score[]")  # List of scores
-        comments = request.form.getlist("comment[]")  # List of comments
-        criteria_ids = request.form.getlist("criteria_id[]")  # List of criteria IDs
+        aspect_ids = request.form.getlist("aspect_id[]")
+        scores = request.form.getlist("score[]")
+        comments = request.form.getlist("comment[]")
+        criteria_ids = request.form.getlist("criteria_id[]")
 
         # Validate form inputs
-        if not all([student_id, term_id, aspect_ids, scores, comments, criteria_ids]):
+        if not all([student_id, term_id, aspect_ids, scores, comments, criteria_ids, school_id]):
             flash("Missing required fields. Please check your input.", "danger")
             return redirect(url_for("main.index"))
 
@@ -43,66 +51,79 @@ def save_scores():
             flash("Data mismatch error. Please ensure all inputs align.", "danger")
             return redirect(url_for("main.index"))
 
-        # Prepare data for insertion
-        data_to_insert = []
-        saved_data = []  # Store data to display after saving
+        # Convert scores to floats and calculate the sum
+        try:
+            scores_float = [float(score) for score in scores]
+            total_score = sum(scores_float)
+            print(f"Total score: {total_score}")
+        except ValueError as e:
+            flash(f"Error converting scores: {str(e)}", "danger")
+            return redirect(url_for("main.index"))
+
+        # Calculate max score (assuming 3 points per criterion)
+        max_score = 3 * len(criteria_ids)  # Assuming 3 points per criterion, adjust if needed
+        print(f"Max score: {max_score}")
+
+        if max_score > 0:
+            # Calculate the total percentage for the overall evaluation
+            total_percentage = (total_score / max_score) * 100  # Calculate percentage
+            total_percentage = round(min(total_percentage, 100), 0)  # Cap the percentage to 100%
+
+            # Prepare data to insert into the marks table (only one record per evaluation)
+            cursor.execute("""
+                INSERT INTO marks (student_id, assessor_id, term_id, school_id, marks, assessment_type, date_awarded)
+                VALUES (%s, %s, %s, %s, %s, %s, CURDATE())
+                ON DUPLICATE KEY UPDATE marks = %s, date_awarded = CURDATE()
+            """, (student_id, assessor_id, term_id, school_id, total_percentage, "system", total_percentage))
+
+            # Commit after the insert
+            conn.commit()
+            print(f"Inserted into marks: student_id={student_id}, assessor_id={assessor_id}, total_percentage={total_percentage}")
+        else:
+            flash("Invalid max score calculated. No data inserted into marks.", "danger")
+            return redirect(url_for("main.index"))
+
+        # Insert data into the scores table for individual aspects and criteria (including school_id)
+        data_to_insert_scores = []
         for idx, criteria_id in enumerate(criteria_ids):
-            try:
-                score = float(scores[idx])  # Ensure score is numeric
-                if not (1 <= score <= 3):  # Validation for score range (1-3)
-                    raise ValueError(f"Score must be between 1 and 3 for criteria {criteria_id}.")
-            except ValueError as e:
-                flash(f"Invalid score for criteria {criteria_id}: {e}", "danger")
-                return redirect(url_for("main.index"))
-
+            score = scores_float[idx]
             comment = comments[idx]
-            if len(comment) > 255:  # Enforce comment length limit
-                flash(f"Comment for criteria {criteria_id} exceeds 255 characters.", "danger")
-                return redirect(url_for("main.index"))
-
             aspect_id = aspect_ids[idx]
-            data_to_insert.append(
-                (student_id, aspect_id, criteria_id, assessor_id, term_id, score, comment)
+
+            # Prepare data for the scores table, now including school_id
+            data_to_insert_scores.append(
+                (student_id, aspect_id, criteria_id, assessor_id, term_id, school_id, score, comment)
             )
 
-            # Save for display
-            saved_data.append(
-                {
-                    "aspect_name": f"Aspect {aspect_id}",  # Replace with actual aspect name from DB if needed
-                    "criteria_name": f"Criteria {criteria_id}",
-                    "score": score,
-                    "comment": comment,
-                }
-            )
-
-        # Insert data into the database
-        with conn.cursor(dictionary=True) as cursor:
-            cursor.executemany(
-                """
-                INSERT INTO scores (student_id, aspect_id, criteria_id, assessor_id, term_id, score, comment)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """,
-                data_to_insert,
-            )
-
+        # Insert into scores table
+        cursor.executemany("""
+            INSERT INTO scores (student_id, aspect_id, criteria_id, assessor_id, term_id, school_id, score, comment)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, data_to_insert_scores)
         conn.commit()
+
+        print("Inserted into scores table successfully.")
+
         flash("Scores saved successfully!", "success")
 
-        # Render a summary page with the saved data
-        if role0 == "Head OF Department":
-            return render_template("scores/evaluation_summary.html",username=session['username'], role=session['role'], student_id=student_id, term_id=term_id, saved_data=saved_data)
+        # Render a summary page with the saved data based on the role
+        if role0 == "Head of Department":
+            return render_template("scores/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
         elif role0 == "School Practice Supervisor":
-            return render_template("scores/assessor/evaluation_summary.html", username=session['username'], role=session['role'],student_id=student_id, term_id=term_id, saved_data=saved_data)
+            return render_template("scores/assessor/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
         else:
             flash("Unauthorized role. Cannot view the summary.", "danger")
             return redirect(url_for("main.index"))
 
     except Exception as e:
+        logging.error(f"An error occurred while saving scores: {str(e)}")
         flash(f"An error occurred while saving scores: {str(e)}", "danger")
         return redirect(url_for("main.index"))
 
     finally:
         conn.close()  # Always close the connection
+
+
 
 
 

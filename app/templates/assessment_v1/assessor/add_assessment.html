@@ -52,7 +52,7 @@
           </div>
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="#">Home</a></li>
+              <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
               <li class="breadcrumb-item active">assessment forms</li>
             </ol>
           </div>
@@ -78,21 +78,38 @@
           <div class="card-body">
             <div class="row">
               <div class="col-md-12">
-
                 <!-- Student Info Display -->
                 <center>
                   <div class="mb-4">
                     <h4 class="text-primary font-weight-bold">Student Name: <span class="text-dark">{{ student.student_teacher }}</span></h4>
                     <h5 class="text-secondary">Student Registration Number: <span class="text-dark">{{ student.reg_no }}</span></h5>
                   </div>
+
+                  
+
                 </center>
 
+                <!-- Start of the Form -->
                 <form action="{{ url_for('scores.save_scores') }}" method="POST" class="form-horizontal">
                   <!-- CSRF Token for security -->
                   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <!-- School Category -->
+                  <center>
+                    <!-- School Category -->
+                    <div class="form-group">
+                      <label for="school_id">Placement School:</label>
+                      <select name="school_id" id="school_id" class="form-control select2" required>
+                        <option value="" selected disabled="selected">Select a School</option>
+                        {% for school in schools %}
+                        <option value="{{ school.id }}">{{ school.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
 
-                  <input name="student_teacher_id" value="{{student.id}}" type="hidden" />
-                  <input name="term_id" value="{{student.term_id}}" type="hidden" />
+                  </center>
+
+                  <input name="student_teacher_id" value="{{ student.id }}" type="hidden" />
+                  <input name="term_id" value="{{ student.term_id }}" type="hidden" />
 
                   <!-- Aspect Details (Card Layout for each aspect) -->
                   {% for i in data %}
@@ -140,6 +157,7 @@
                   </div>
 
                 </form>
+                <!-- End of the Form -->
               </div>
             </div>
           </div>
@@ -171,17 +189,6 @@
   $(function () {
     // Initialize Select2 for dropdowns
     $('.select2').select2();
-
-    // Registration number validation pattern
-    $('#reg_no').on('input', function () {
-      const regNo = $(this).val();
-      const regex = /^[A-Za-z0-9]+$/; // Alphanumeric format
-      if (!regex.test(regNo)) {
-        $(this)[0].setCustomValidity('Invalid registration number format');
-      } else {
-        $(this)[0].setCustomValidity('');
-      }
-    });
   });
 </script>
 {% endblock javascripts %}

@@ -1,9 +1,18 @@
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session,jsonify
 from app.db import get_db_connection
-
+import os
+import pandas as pd
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from werkzeug.utils import secure_filename
+from io import BytesIO
+from app import app
+ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 # Initialize blueprint
 student_bp = Blueprint('student', __name__)
+
+
+    
 
 def fetch_programmes_and_terms():
     """Fetch programmes and terms for dropdowns."""
@@ -86,7 +95,7 @@ def manage_student():
         print("Student Info for Rendering:", student_info)
 
         # Selecting the correct template based on user role
-        template = 'student/manage_student.html' if session['role'] == "Head Of Department" else 'student/assessor_manage_student.html'
+        template = 'student/manage_student.html' if session['role'] == "Head of Department" else 'student/assessor_manage_student.html'
         return render_template(template, username=session['username'], role=session['role'],
                                student_info=student_info, programmes=programmes, terms=terms)
     
@@ -191,7 +200,7 @@ def edit_student(student_id):
 
         cursor.close()
         conn.close()
-        template = 'student/edit_student.html' if session['role'] == "Head OF Department" else 'student/assessor_edit_student.html'
+        template = 'student/edit_student.html' if session['role'] == "Head of Department" else 'student/assessor_edit_student.html'
         return render_template(template, username=session['username'], role=session['role'], terms=terms, student=student, programmes=programmes)
     except Exception as e:
         flash(f"An error occurred: {str(e)}", "danger")
@@ -282,7 +291,7 @@ def manage_student():
         conn.close()
 
         # Render appropriate template based on user role
-        template = 'student/manage_student.html' if session['role'] == "Head OF Department" else 'student/assessor_manage_student.html'
+        template = 'student/manage_student.html' if session['role'] == "Head of Department" else 'student/assessor_manage_student.html'
         return render_template(template, username=session['username'], role=session['role'],
                                student_info=student_info, programmes=programmes, terms=terms)
     except Exception as e:
@@ -380,7 +389,7 @@ def add_student():
                 return redirect(url_for('student.manage_student'))
 
         # Render appropriate template based on user role
-        template = 'student/add_student.html' if session['role'] == "Head OF Department" else 'student/assessor_add_student.html'
+        template = 'student/add_student.html' if session['role'] == "Head of Department" else 'student/assessor_add_student.html'
         return render_template(template, username=session['username'], role=session['role'], programmes=programmes, terms=terms)
     except Exception as e:
         # Handle errors gracefully
@@ -442,7 +451,7 @@ def edit_student(student_id):
         conn.close()
 
         # Render appropriate template based on user role
-        template = 'student/edit_student.html' if session['role'] == "Head OF Department" else 'student/assessor_edit_student.html'
+        template = 'student/edit_student.html' if session['role'] == "Head of Department" else 'student/assessor_edit_student.html'
         return render_template(template, username=session['username'], role=session['role'], terms=terms, student=student, programmes=programmes)
     except Exception as e:
         # Handle errors gracefully
@@ -521,3 +530,190 @@ def register_student(student_id):
 
 
 
+
+
+
+
+
+
+# Helper function to check file extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# Route to download the template file
+@student_bp.route('/download_template', methods=['GET'])
+def download_template():
+    # Create a DataFrame with the template structure
+    template_data = {
+        "Student Teacher": ["", "", ""],
+        "Programme": ["", "", ""],
+        "Registration No": ["", "", ""],
+        "Term": ["", "", ""],
+        "Subject": ["", "", ""],
+        "Class": ["", "", ""],
+        "Teaching Time": ["", "", ""],
+        "Topic": ["", "", ""],
+        "Subtopic": ["", "", ""]
+    }
+
+    df = pd.DataFrame(template_data)
+
+    # Save it to an Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Template')
+    
+    # Move the pointer to the beginning of the BytesIO buffer before sending it
+    output.seek(0)
+
+    return send_file(output, as_attachment=True, download_name="student_teacher_template.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+
+
+
+
+
+
+# Ensure the upload folder exists
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
+@student_bp.route('/upload_excel', methods=['GET', 'POST'])
+def upload_excel():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            
+            # Process the uploaded Excel file
+            try:
+                # Read the Excel file using pandas
+                df = pd.read_excel(file_path)
+
+                # Open a database connection
+                connection = get_db_connection()
+                cursor = connection.cursor()
+
+                # List to store valid rows (those that don't have a duplicate reg_no)
+                rows_to_insert = []
+                existing_reg_nos = []
+                errors = []
+                seen_reg_nos = set()  # Set to track seen registration numbers
+                duplicate_reg_nos = []  # List to store duplicate reg_no values within the file
+
+                # Iterate through the DataFrame and check each row
+                for index, row in df.iterrows():
+                    reg_no = row['Registration No']
+                    programme_name = row['Programme']
+                    term = row['Term']
+
+                    # Check for duplicate registration numbers in the uploaded file
+                    if reg_no in seen_reg_nos:
+                        duplicate_reg_nos.append(reg_no)  # Add to the list of duplicates
+                    else:
+                        seen_reg_nos.add(reg_no)  # Add to the seen set
+
+                    # Check if the registration number already exists in the database
+                    cursor.execute("SELECT COUNT(*) FROM student_info WHERE reg_no = %s", (reg_no,))
+                    reg_no_exists = cursor.fetchone()[0]
+
+                    if reg_no_exists > 0:
+                        # If reg_no exists, add it to the list of existing reg_nos
+                        existing_reg_nos.append(reg_no)
+                    else:
+                        # Check if the programme exists in the database
+                        cursor.execute("SELECT COUNT(*) FROM programmes WHERE programme_name = %s", (programme_name,))
+                        programme_exists = cursor.fetchone()[0]
+                        
+                        # Check if the term exists in the database
+                        cursor.execute("SELECT COUNT(*) FROM terms WHERE term = %s", (term,))
+                        term_exists = cursor.fetchone()[0]
+                        
+                        if not programme_exists:
+                            errors.append(f"Programme '{programme_name}' does not exist in the database for row {index + 1}.")
+                        if not term_exists:
+                            errors.append(f"Term '{term}' does not exist in the database for row {index + 1}.")
+                        
+                        if programme_exists and term_exists:
+                            # If both programme and term exist, add the row to the list of rows to insert
+                            rows_to_insert.append(row)
+
+                # If there are any duplicate reg_nos within the file, notify the user
+                if duplicate_reg_nos:
+                    flash(f"Duplicate registration number(s) found in the file: {', '.join(map(str, duplicate_reg_nos))}. Please remove duplicates and try again.", 'danger')
+                    return redirect(request.url)
+
+                # If there are any errors (non-existent programmes or terms), notify the user
+                if errors:
+                    flash('Errors encountered:\n' + '\n'.join(errors), 'danger')
+                    return redirect(request.url)
+
+                # If there are any existing reg_nos, notify the user
+                if existing_reg_nos:
+                    flash(f"Registration number(s) already exist in the database: {', '.join(existing_reg_nos)}. These entries were skipped.", 'warning')
+
+                # Insert the valid rows (those with new reg_nos and valid programmes/terms) into the database
+                for row in rows_to_insert:
+                    student_teacher = row['Student Teacher']
+                    programme_name = row['Programme']
+                    reg_no = row['Registration No']
+                    term = row['Term']
+                    subject = row['Subject']
+                    class_name = row['Class']
+                    teaching_time = row['Teaching Time']
+                    topic = row['Topic']
+                    subtopic = row['Subtopic']
+
+                    # If teaching_time is a datetime or timestamp, ensure it’s properly formatted
+                    if isinstance(teaching_time, datetime):
+                        teaching_time = teaching_time.strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(teaching_time, str):
+                        # If it's a string, try to convert it to datetime first
+                        teaching_time = datetime.strptime(teaching_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
+
+                    # Lookup programme_id from the programmes table
+                    cursor.execute("SELECT id FROM programmes WHERE programme_name = %s", (programme_name,))
+                    programme_result = cursor.fetchone()
+                    programme_id = programme_result[0] if programme_result else None
+
+                    # Lookup term_id from the terms table
+                    cursor.execute("SELECT id FROM terms WHERE term = %s", (term,))
+                    term_result = cursor.fetchone()
+                    term_id = term_result[0] if term_result else None
+
+                    # Insert data into the student_info table
+                    sql = """
+                    INSERT INTO student_info (student_teacher, programme_id, reg_no, subject, term_id, 
+                    class_name, topic, subtopic, teaching_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(sql, (student_teacher, programme_id, reg_no, subject, term_id, 
+                                         class_name, topic, subtopic, teaching_time))
+
+                # Commit the changes and close the connection
+                connection.commit()
+                connection.close()
+
+                flash(f'{len(rows_to_insert)} new record(s) uploaded successfully!', 'success')
+                return redirect(url_for('student.upload_excel'))
+            except Exception as e:
+                flash(f'Error processing the file: {e}', 'danger')
+                return redirect(url_for('student.upload_excel'))
+        else:
+            flash('Invalid file format. Please upload an Excel file.', 'danger')
+            return redirect(request.url)
+
+    return render_template('student/upload_excel.html', username=session['username'], role=session['role'])
