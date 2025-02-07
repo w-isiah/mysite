@@ -34,8 +34,12 @@ from app.terms.terms  import term_bp
 from app.school_category.school_category import school_category_bp
 from app.schools.schools  import schools_bp
 from app.moderate.moderate import moderate_bp
+from app.ratings.ratings import ratings_bp
+from app.assign_assessor.assign_assessor import assign_assessor_bp
 # Register blueprints
 
+app.register_blueprint(assign_assessor_bp,url_prefix='/assign_assessor')
+app.register_blueprint(ratings_bp,url_prefix='/ratings')
 app.register_blueprint(moderate_bp,url_prefix='/moderate')
 app.register_blueprint(schools_bp,url_prefix='/schools')
 app.register_blueprint(school_category_bp,url_prefix='/school_category')

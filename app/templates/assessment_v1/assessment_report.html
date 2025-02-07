@@ -23,6 +23,7 @@
 {% block content %}
 <div class="content-wrapper">
   <div class="container-fluid">
+    <!-- Alert Messages -->
     <div class="row mb-2">
       <div class="col-12">
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -45,7 +46,6 @@
     <!-- Filter Form (All in one line) -->
     <form method="POST" action="{{ url_for('assessment.assessment_report') }}" class="form-inline mb-4" onsubmit="return validateForm()">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
       <div class="form-group mr-2">
         <label for="programme" class="mr-2">Programme:</label>
         <select name="programme_id" id="programme" class="form-control" required>
@@ -73,9 +73,9 @@
       <button type="submit" class="btn btn-success">Search</button>
     </form>
 
-    <!-- Student Registration Form (All in one line) -->
+    <!-- Student Registration Form -->
     <form method="POST" action="{{ url_for('assessment.check_student') }}" class="form-inline mb-4">
-       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="form-group mr-2">
         <label for="reg_no" class="mr-2">Reg No:</label>
         <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No">
@@ -83,7 +83,7 @@
       <button type="submit" class="btn btn-primary">Search Student</button>
     </form>
 
-    <!-- Data Table -->
+    <!-- Data Tables -->
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Assessment Data</h3>
@@ -94,50 +94,76 @@
           <button type="submit" name="export_excel" class="btn btn-primary mb-3">Export to Excel</button>
         </form>
 
-        <table id="example1" class="table table-bordered table-striped table-hover">
-          <thead>
-            <tr>
-              <th>Reg No</th>
-              <th>Student Name</th>
-              <th>Subject</th>
-              <th>Term</th>
-              {% for assessor in assessors %}
-                <th>{{ assessor }}</th>
-              {% endfor %}
-              <th>Average Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for student in data %}
-              <tr>
-                <td>{{ student.reg_no }}</td>
-                <td>{{ student.student_name }}</td>
-                <td>{{ student.subject }}</td>
-                <td>{{ student.term }}</td>
-                
-                {% for assessor in assessors %}
-                  <td>
-                    {% if student.get(assessor) %}
-                      {{ student[assessor] }}
-                    {% else %}
-                      Not Assessed
-                    {% endif %}
-                  </td>
-                {% endfor %}
-                
-                <td>
-                  {% if student.average_score is not none %}
-                    {{ student.average_score }}
+        <!-- Table Wrapper -->
+        <div class="row">
+          <!-- Student Information Table -->
+          <div class="col-md-6">
+            <div class="table-container">
+              <table class="table table-bordered table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th>Reg No</th>
+                    <th>Student Name</th>
+                    <th>Subject</th>
+                    <th>Term</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for student in data %}
+                    <tr>
+                      <td>{{ student.reg_no }}</td>
+                      <td>{{ student.student_name }}</td>
+                      <td>{{ student.subject }}</td>
+                      <td>{{ student.term }}</td>
+                    </tr>
                   {% else %}
-                    Not Assessed
-                  {% endif %}
-                </td>
-              </tr>
-            {% else %}
-              <tr><td colspan="{{ assessors|length + 5 }}">No data found for the selected filters.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+                    <tr><td colspan="4">No data found for the selected filters.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Assessor Columns Table -->
+          <div class="col-md-6">
+            <div class="table-container">
+              <table class="table table-bordered table-striped table-hover">
+                <thead>
+                  <tr>
+                    {% for assessor in assessors %}
+                      <th>{{ assessor }}</th>
+                    {% endfor %}
+                    <th>Average Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for student in data %}
+                    <tr>
+                      {% for assessor in assessors %}
+                        <td>
+                          {% if student.get(assessor) %}
+                            {{ student[assessor] }}
+                          {% else %}
+                            Not Assessed
+                          {% endif %}
+                        </td>
+                      {% endfor %}
+                      <td>
+                        {% if student.average_score is not none %}
+                          {{ student.average_score }}
+                        {% else %}
+                          Not Assessed
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% else %}
+                    <tr><td colspan="{{ assessors|length + 1 }}">No data found for the selected filters.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -190,4 +216,107 @@
     return true; // Allow form submission
   }
 </script>
+
+<style>
+  /* Wrapper for the scrollable table */
+  .table-container {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    display: block;
+    margin-bottom: 20px; /* Space for better layout */
+  }
+
+  .table th, .table td {
+    padding: 12px; /* Increased padding for better readability */
+    text-align: left;
+    border: 1px solid #dee2e6; /* Light gray border */
+  }
+
+  /* Stylish Table with Hover Effects */
+  .table-bordered {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: #f1f1f1; /* Light gray hover effect */
+    cursor: pointer;
+  }
+
+  /* Sticky Headers with a subtle shadow */
+  .table th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-weight: bold; /* Bold headers */
+  }
+
+  /* Scroll for large number of assessor columns */
+  .table-container {
+    overflow-x: scroll;
+  }
+
+  .table thead th {
+    white-space: nowrap;
+  }
+
+  .table tbody td {
+    white-space: nowrap;
+  }
+
+  /* Layout for side-by-side columns */
+  .row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap; /* Ensure columns don't wrap */
+  }
+
+  .col-md-6 {
+    flex: 0 0 48%; /* Adjust the width to fit both tables in the same row */
+    margin-right: 2%;
+  }
+
+  .col-md-6:last-child {
+    margin-right: 0;
+  }
+
+  /* Add a shadow around the tables for a floating effect */
+  .table-container table {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow for floating effect */
+    border-radius: 8px; /* Rounded corners */
+  }
+
+  /* Adjust button padding for consistency */
+  .btn {
+    padding: 10px 20px;
+    border-radius: 5px;
+  }
+
+  /* Style for the alert box */
+  .alert-container {
+    margin-bottom: 15px;
+  }
+
+  .alert {
+    border-radius: 8px; /* Rounded corners for alerts */
+    font-size: 14px;
+    padding: 15px;
+  }
+
+  /* Extra responsiveness for small devices */
+  @media (max-width: 768px) {
+    .col-md-6 {
+      flex: 1 1 100%; /* Stack the columns on smaller screens */
+      margin-right: 0;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+  }
+</style>
 {% endblock javascripts %}

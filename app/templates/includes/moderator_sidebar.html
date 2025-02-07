@@ -117,6 +117,35 @@
           </ul>
         </li>
 
+
+           <!-- Ratings -->
+        <li class="nav-item has-treeview">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-book"></i>
+            <p>
+              Ratings
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ url_for('ratings.manage_ratings') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>View Ratings</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('ratings.add_rating') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Add Rating</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+
+
+
         <!-- Programmes -->
         <li class="nav-item has-treeview">
           <a href="#" class="nav-link">
@@ -272,6 +301,37 @@
             </li>
           </ul>
         </li>
+
+
+
+
+         <!-- Students -->
+        <li class="nav-item has-treeview">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-users"></i>
+            <p>
+              Assign Assessor
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>View Students</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('student.add_student') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Add Student</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+
+
 
       </ul>
     </nav>

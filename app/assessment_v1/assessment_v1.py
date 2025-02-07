@@ -168,6 +168,92 @@ def check_student():
 
 
 
+@assessment_bp.route('/check_student_v1/<string:reg_no>', methods=['GET', 'POST'])
+def check_student_v1(reg_no):
+    role = session.get('role')  # Get logged-in user's role
+    user_id = session.get('id')  # Get logged-in user's ID
+
+    # Redirect if user is not logged in
+    if not user_id:
+        return redirect(url_for('login'))
+
+    # Establish a database connection
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        if request.method == 'POST':
+            # Get registration number from the form input (if POST request)
+            reg_no = request.form.get('reg_no')
+
+            # Fetch student details from the database
+            cursor.execute("SELECT * FROM student_info WHERE reg_no = %s", (reg_no,))
+            student = cursor.fetchone()
+
+            if not student:
+                message = "No student found with the given registration number."
+                template = 'student_assessment/check_student_2.html' if role == 'Head of Department' else 'student_assessment/assessor/check_student_2.html'
+                return render_template(template, role=role, message=message)
+
+            # Fetch student's marks for the logged-in assessor
+            cursor.execute("""
+                SELECT * FROM marks 
+                WHERE student_id = %s AND assessor_id = %s
+            """, (student['id'], user_id))
+            student_marks = cursor.fetchall()
+
+            # Get terms from student_info table (for student)
+            cursor.execute("SELECT DISTINCT term_id FROM student_info WHERE reg_no = %s", (reg_no,))
+            student_terms = cursor.fetchall()
+            student_term_ids = [term['term_id'] for term in student_terms]
+
+            # If no marks are found, inform the user
+            if not student_marks:
+                message = "Student has not been assessed yet. Please assess them."
+                template = 'student_assessment/check_student_2.html' if role == 'Head of Department' else 'student_assessment/assessor/check_student_2.html'
+                return render_template(template, username=session['username'], role=role, student=student, message=message)
+
+            # Prepare results for each term
+            results = []
+            all_term_ids = sorted(set(student_term_ids + [mark['term_id'] for mark in student_marks]))
+
+            for term in all_term_ids:
+                result = {
+                    'term_id': term,
+                    'message': 'Not Assessed',
+                    'marks': None
+                }
+
+                for mark in student_marks:
+                    if mark['term_id'] == term:
+                        result.update({
+                            'marks': mark['marks'],
+                            'assessment_type': mark['assessment_type'],
+                            'date_awarded': mark['date_awarded'],
+                            'message': 'Assessed'
+                        })
+                        break
+
+                results.append(result)
+
+            # Render template based on user role
+            template = 'student_assessment/check_student_2.html' if role == 'Head of Department' else 'student_assessment/assessor/check_student_2.html'
+            return render_template(template, username=session['username'], role=role, student=student, results=results)
+
+        else:
+            # Handle GET request (render form initially)
+            template = 'student_assessment/check_student_2.html' if role == 'Head of Department' else 'student_assessment/assessor/check_student_2.html'
+            return render_template(template, username=session['username'], role=role)
+
+    except Exception as e:
+        logging.error(f"Error occurred while processing request for {reg_no}: {e}")
+        flash("An error occurred while processing the request.", "danger")
+        template = 'student_assessment/check_student_2.html' if role == 'Head of Department' else 'student_assessment/assessor/check_student_2.html'
+        return render_template(template, username=session['username'], role=role)
+
+    finally:
+        cursor.close()
+        connection.close()
 
 
 
@@ -193,6 +279,9 @@ def assess_v1(student_id):
             cursor.execute("SELECT * FROM schools")
             schools = cursor.fetchall()
 
+            cursor.execute("SELECT * FROM ratings")
+            ratings = cursor.fetchall()
+
         # Check if the student exists
         if not student:
             return "Student not found", 404  # Return a 404 error if the student does not exist
@@ -210,11 +299,11 @@ def assess_v1(student_id):
         conn.close()  # Close the database connection
 
     # Render the template with the fetched data
-    if session['role'] == 'Head OF Deaprtment':
-        return render_template('assessment_v1/add_assessment.html',schools=schools,username=session['username'],role=session['role'], student_id=student_id, data=data, student=student)
+    if session['role'] == 'Head of Department':
+        return render_template('assessment_v1/add_assessment.html',ratings=ratings,schools=schools,username=session['username'],role=session['role'], student_id=student_id, data=data, student=student)
     else:
 
-        return render_template('assessment_v1/assessor/add_assessment.html',schools=schools, username=session['username'],role=session['role'],student_id=student_id, data=data, student=student)
+        return render_template('assessment_v1/assessor/add_assessment.html',ratings=ratings,schools=schools, username=session['username'],role=session['role'],student_id=student_id, data=data, student=student)
 
 
 
