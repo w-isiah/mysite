@@ -98,8 +98,9 @@
 							<table id="example1" class="table table-bordered table-striped table-hover">
 								<thead>
 									<tr>
-										<th>Serial Number</th>
+										
 										<th>Criteria Question</th>
+										<th>View Rating Scale <small>Criteria</small></th>
 										<th>Edit</th>
 										<th>Delete</th>
 									</tr>
@@ -107,8 +108,17 @@
 								<tbody>
 									{% for question in questions %}
 									<tr>
-										<td>{{ question.serial_number }}</td>
+								
 										<td>{{ question.criteria_name }}</td>
+
+
+										<td>
+											<a href="{{ url_for('ratings.moderator_view_ratings',criteria_id = question.criteria_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Edit Question">
+												<i class="fas fa-eye"></i></i>
+											</a>
+										</td>
+
+
 										<td>
 											<a href="{{ url_for('aspect_qns_bp.edit_criteria_question',criteria_id = question.criteria_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Edit Question">
 												<i class="fas fa-edit"></i>

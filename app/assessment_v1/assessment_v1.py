@@ -267,43 +267,66 @@ def check_student_v1(reg_no):
 @assessment_bp.route('/assess_v1/<int:student_id>', methods=['GET', 'POST'])
 def assess_v1(student_id):
     role0 = session.get('role')
-    # Establish connection to the database
-    conn = get_db_connection()
+    
+    # Establish a database connection
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
 
     try:
         # Fetch student data
-        with conn.cursor(dictionary=True) as cursor:
-            cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
-            student = cursor.fetchone()
+        cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
+        student = cursor.fetchone()
 
-            cursor.execute("SELECT * FROM schools")
-            schools = cursor.fetchall()
+        cursor.execute("SELECT * FROM schools")
+        schools = cursor.fetchall()
 
-            cursor.execute("SELECT * FROM ratings")
-            ratings = cursor.fetchall()
+        cursor.execute("SELECT * FROM ratings")
+        ratings = cursor.fetchall()
 
         # Check if the student exists
         if not student:
             return "Student not found", 404  # Return a 404 error if the student does not exist
 
         # Fetch assessment criteria data with aspect_id included
-        with conn.cursor(dictionary=True) as cursor:
-            cursor.execute("""
-                SELECT s.aspect_id, s.aspect_name, ac.criteria_id, ac.criteria_name, s.description, s.competence
-                FROM aspect s
-                JOIN assessment_criteria ac ON s.aspect_id = ac.aspect_id
-            """)
-            data = cursor.fetchall()
+        cursor.execute("""
+            SELECT s.aspect_id, s.aspect_name, ac.criteria_id, ac.criteria_name, s.description, s.competence
+            FROM aspect s
+            JOIN assessment_criteria ac ON s.aspect_id = ac.aspect_id
+        """)
+        data = cursor.fetchall()
+
+        # Fetch ratings by assessment_criteria_id
+        ratings_by_criteria = {}
+        for row in data:
+            cursor.execute("SELECT * FROM ratings WHERE assessment_criteria_id = %s", (row['criteria_id'],))
+            ratings_by_criteria[row['criteria_id']] = cursor.fetchall()
 
     finally:
-        conn.close()  # Close the database connection
+        # Close the cursor and connection to free up resources
+        cursor.close()
+        connection.close()
 
     # Render the template with the fetched data
     if session['role'] == 'Head of Department':
-        return render_template('assessment_v1/add_assessment.html',ratings=ratings,schools=schools,username=session['username'],role=session['role'], student_id=student_id, data=data, student=student)
+        return render_template('assessment_v1/add_assessment.html',
+                               ratings_by_criteria=ratings_by_criteria, 
+                               schools=schools,
+                               username=session['username'], 
+                               role=session['role'], 
+                               student_id=student_id, 
+                               data=data, 
+                               student=student)
     else:
+        return render_template('assessment_v1/assessor/add_assessment.html',
+                               ratings_by_criteria=ratings_by_criteria, 
+                               schools=schools,
+                               username=session['username'], 
+                               role=session['role'],
+                               student_id=student_id, 
+                               data=data, 
+                               student=student)
 
-        return render_template('assessment_v1/assessor/add_assessment.html',ratings=ratings,schools=schools, username=session['username'],role=session['role'],student_id=student_id, data=data, student=student)
+
 
 
 

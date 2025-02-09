@@ -89,6 +89,17 @@
                   </select>
                 </div>
 
+                <!-- Assessment Criteria Selection -->
+                <div class="form-group">
+                  <label for="assessment_criteria_id">Criteria Question:</label>
+                  <select class="form-control select2" name="assessment_criteria_id" id="assessment_criteria_id" style="width: 100%;" required>
+                    <option value="" selected disabled="selected">Select Question</option>
+                    {% for criteria in assessment_criteria %}
+                      <option value="{{ criteria.criteria_id }}">{{ criteria.criteria_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
                 <!-- Submit Button -->
                 <button type="submit" class="btn btn-primary">Add Rating</button>
               </form>

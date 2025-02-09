@@ -27,29 +27,72 @@ def manage_ratings():
         # Handle any exceptions that occur during the database operation
         return f"An error occurred: {e}", 500
 
-# Route to add a new rating
+
+
+
+
+
+
+
 @ratings_bp.route('/add_rating', methods=['GET', 'POST'])
 def add_rating():
+    # Fetching assessment criteria from the database
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM assessment_criteria")
+        assessment_criteria = cursor.fetchall()
+    except Exception as e:
+        flash(f"Error fetching assessment criteria: {e}", 'danger')
+        return redirect(url_for('ratings.manage_ratings'))
+
     if request.method == 'POST':
+        # Get the form data
         rating_name = request.form['rating_name']
         description = request.form['description']
         mark = request.form['mark']
+        assessment_criteria_id = request.form['assessment_criteria_id']
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO ratings (rating, description, mark) VALUES (%s, %s, %s)",
-                       (rating_name, description, mark))
-        conn.commit()
-        conn.close()
+        # Simple input validation
+        if not rating_name or not description or not mark or not assessment_criteria_id:
+            flash('All fields are required. Please fill them out.', 'danger')
+            return redirect(url_for('ratings.add_rating'))
+
+        try:
+            # Inserting the new rating into the database
+            cursor.execute("""
+                INSERT INTO ratings (rating, description, mark, assessment_criteria_id)
+                VALUES (%s, %s, %s, %s)
+            """, (rating_name, description, mark, assessment_criteria_id))
+            conn.commit()
+        except Exception as e:
+            flash(f"Error adding rating: {e}", 'danger')
+            return redirect(url_for('ratings.add_rating'))
+        finally:
+            conn.close()
 
         flash('Rating added successfully!', 'success')
         return redirect(url_for('ratings.manage_ratings'))
 
-    return render_template('ratings/add_rating.html')
+    # If GET request, render the form with assessment criteria
+    return render_template('ratings/add_rating.html', assessment_criteria=assessment_criteria)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Route to edit an existing rating
 @ratings_bp.route('/edit_rating/<int:rating_id>', methods=['GET', 'POST'])
-def edit_rating(rating_id):
+def edit_rating(rating_id): 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -99,3 +142,28 @@ def delete_rating(rating_id):
 
     flash('Rating deleted successfully!', 'danger')
     return redirect(url_for('ratings.manage_ratings'))
+
+
+
+
+
+@ratings_bp.route('/moderator_view_ratings/<criteria_id>', methods=['GET', 'POST'])
+def moderator_view_ratings(criteria_id):
+    # Get the database connection
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch all records for the given aspect_id
+    cursor.execute("SELECT * FROM ratings WHERE assessment_criteria_id = %s", (criteria_id,))
+    ratings = cursor.fetchall()  # This will fetch all the records
+
+    # Close the connection
+    conn.close()
+
+    # Pass the questions list to the template
+    return render_template('ratings/manage_ratings.html',username=session['username'],role=session['role'], ratings=ratings)
+
+
+
+
+    

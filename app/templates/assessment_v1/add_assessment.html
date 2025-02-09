@@ -126,17 +126,15 @@
                       <div class="form-group row">
                         <label for="score_{{ i.criteria_id }}" class="col-sm-3 col-form-label">Score:</label>
                         <div class="col-sm-9">
-                          <select name="score[]" id="score_{{ i.criteria_id }}" class="form-control" required>
-                            {% for rating in ratings %}
-                              <option value="{{ rating.mark }}" {% if rating.mark == 3 %}selected{% endif %}>
+                          <select name="score[]" id="score_{{ i.criteria_id }}" class="form-control select2" required>
+                            {% for rating in ratings_by_criteria[i.criteria_id] %}
+                              <option value="{{ rating.mark }}" {% if rating.mark == 0 %}selected{% endif %}>
                                 {{ rating.rating }} ({{ rating.mark }})
                               </option>
                             {% endfor %}
                           </select>
                         </div>
                       </div>
-
-                    
 
                       <!-- Hidden Inputs for Aspect and Criteria IDs -->
                       <input type="hidden" name="aspect_id[]" value="{{ i.aspect_id }}" />

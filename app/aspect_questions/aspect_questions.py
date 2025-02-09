@@ -48,6 +48,8 @@ def view_aspect_questions(aspect_id):
 
 
 
+
+
 @aspect_qns_bp.route('/add_aspect_question', methods=['GET', 'POST'])
 def add_aspect_question():
     # Establish database connection
@@ -59,31 +61,18 @@ def add_aspect_question():
     aspects = cursor.fetchall()
 
     if request.method == 'POST':
-        serial_number = request.form['serial_number']
+        # Get form data
         criteria_name = request.form['criteria_name']
         aspect_id = request.form['aspect_id']
-
-        # Validate serial number format (e.g., SN001, SN002)
-        if not serial_number.startswith('SN') or not serial_number[2:].isdigit():
-            flash('Error: Serial number must follow the format SN001, SN002, etc.', 'danger')
-            return redirect(url_for('aspect_qns_bp.add_aspect_question'))
-
-        # Check if the serial number already exists in the database
-        cursor.execute("SELECT * FROM assessment_criteria WHERE serial_number = %s", (serial_number,))
-        existing_serial = cursor.fetchone()
-
-        if existing_serial:
-            flash('Error: Serial number already exists. Please use a unique serial number.', 'danger')
-            return redirect(url_for('aspect_qns_bp.add_aspect_question'))
 
         # Insert new record into the assessment_criteria table
         try:
             cursor.execute("""
-                INSERT INTO assessment_criteria (serial_number, criteria_name, aspect_id)
-                VALUES (%s, %s, %s)
-            """, (serial_number, criteria_name, aspect_id))
+                INSERT INTO assessment_criteria (criteria_name, aspect_id)
+                VALUES (%s, %s)
+            """, (criteria_name, aspect_id))
 
-            # Commit changes
+            # Commit changes to the database
             conn.commit()
 
             flash('Assessment criteria added successfully!', 'success')
@@ -97,7 +86,10 @@ def add_aspect_question():
     cursor.close()
     conn.close()
 
-    return render_template('aspect_questions/add_aspect_question.html',username=session['username'],role=session['role'], aspects=aspects)
+    # Render the form page
+    return render_template('aspect_questions/add_aspect_question.html', 
+                           username=session['username'], role=session['role'], aspects=aspects)
+
 
 
 
