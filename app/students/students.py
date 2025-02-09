@@ -518,7 +518,7 @@ def register_student(student_id):
         cursor.close()
         conn.close()
 
-        return render_template('student/register_student.html', student=student, terms=terms)
+        return render_template('student/register_student.html',username=session['username'], student=student, terms=terms)
 
     except Exception as e:
         flash(f"An error occurred while fetching data: {str(e)}", "danger")
