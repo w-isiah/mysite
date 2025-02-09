@@ -43,8 +43,9 @@ def save_scores():
         aspect_ids = request.form.getlist("aspect_id[]")
         scores = request.form.getlist("score[]")
         criteria_ids = request.form.getlist("criteria_id[]")
+        comment = request.form.get("comment")  # Get the comment text from the form
 
-        if not all([student_id, term_id, aspect_ids, scores, criteria_ids, school_id]):
+        if not all([student_id, term_id, aspect_ids, scores, criteria_ids, school_id, comment]):
             flash("Missing required fields. Please check your input.", "danger")
             return redirect(url_for("main.index"))
 
@@ -79,6 +80,15 @@ def save_scores():
             flash("Invalid max score calculated. No data inserted into marks.", "danger")
             return redirect(url_for("main.index"))
 
+        # Insert the comment into the general_comments table
+        cursor.execute("""
+            INSERT INTO general_comments (student_id, assessor_id, term_id, comment)
+            VALUES (%s, %s, %s, %s)
+        """, (student_id, assessor_id, term_id, comment))
+
+        conn.commit()
+        print(f"Inserted into general_comments: student_id={student_id}, assessor_id={assessor_id}, comment={comment}")
+
         data_to_insert_scores = []
         for idx, criteria_id in enumerate(criteria_ids):
             score = scores_float[idx]
@@ -96,7 +106,7 @@ def save_scores():
 
         print("Inserted into scores table successfully.")
 
-        flash("Scores saved successfully!", "success")
+        flash("Scores and comments saved successfully!", "success")
 
         if role0 == "Head of Department":
             return render_template("scores/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)

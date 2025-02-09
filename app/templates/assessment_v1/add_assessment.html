@@ -53,11 +53,11 @@
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-              <li class="breadcrumb-item active">assessment forms</li>
+              <li class="breadcrumb-item active">Assessment forms</li>
             </ol>
           </div>
         </div>
-      </div><!-- /.container-fluid -->
+      </div>
     </section>
 
     <!-- Main content -->
@@ -66,14 +66,6 @@
         <div class="card card-default">
           <div class="card-header">
             <h3 class="card-title">Assessment Forms</h3>
-            <div class="card-tools">
-              <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                <i class="fas fa-minus"></i>
-              </button>
-              <button type="button" class="btn btn-tool" data-card-widget="remove">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
           </div>
           <div class="card-body">
             <div class="row">
@@ -143,6 +135,14 @@
                   </div>
                   {% endfor %}
 
+                  <!-- Comment Field -->
+                  <div class="form-group row">
+                    <label for="comment" class="col-sm-3 col-form-label">Comment:</label>
+                    <div class="col-sm-9">
+                      <textarea name="comment" id="comment" class="form-control" rows="4" placeholder="Enter your comment" required></textarea>
+                    </div>
+                  </div>
+
                   <!-- Submit Button -->
                   <div class="form-actions text-center mt-4">
                     <button type="submit" class="btn btn-success btn-lg">Save Data</button>
@@ -160,7 +160,6 @@
 {% endblock content %}
 
 {% block javascripts %}
-<!-- Include necessary scripts -->
 <script src="/static/assets/plugins/jquery/jquery.min.js"></script>
 <script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/static/assets/plugins/select2/js/select2.full.min.js"></script>
@@ -182,4 +181,4 @@
     $('.select2').select2();
   });
 </script>
-{% endblock javascripts %}
+{% endblock %}

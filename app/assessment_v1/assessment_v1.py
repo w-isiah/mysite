@@ -74,13 +74,13 @@ def assessment_check():
 @assessment_bp.route('/check_student', methods=['GET', 'POST'])
 def check_student():
     role = session.get('role')  # Get the logged-in user's role
-    role = role.strip()
     user_id = session.get('id')  # Get the logged-in user's ID
-    connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
 
     if not user_id:
         return redirect(url_for('login'))  # Redirect if the user is not logged in
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
 
     try:
         if request.method == 'POST':
@@ -91,10 +91,8 @@ def check_student():
             student = cursor.fetchone()
 
             if not student:
-                if role == "Head of Department":
-                    return render_template('student_assessment/check_student_2.html', role=role, message="No student found with the given registration number.")
-                else:
-                    return render_template('student_assessment/assessor/check_student_2.html', role=role, message="No student found with the given registration number.")
+                message = "No student found with the given registration number."
+                return render_template('student_assessment/check_student_2.html', role=role, message=message)
 
             # Fetch student marks ONLY for the logged-in assessor
             cursor.execute("""
@@ -110,10 +108,8 @@ def check_student():
 
             # If no marks are found, mark the student as "Not Assessed"
             if not student_marks:
-                if role == "Head of Department":
-                    return render_template('student_assessment/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
-                else:
-                    return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
+                message = "Student has not been assessed yet. Please assess them."
+                return render_template('student_assessment/check_student_2.html', username=session['username'], role=role, student=student, message=message)
 
             # Prepare results for each term (fetch term and marks)
             results = []
@@ -137,28 +133,23 @@ def check_student():
 
                 results.append(result)
 
-            # Return the template with results
-            if role == "Head of Department":
-                return render_template('student_assessment/check_student_2.html', username=session['username'], role=role, student=student, results=results)
-            else:
-                return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role, student=student, results=results)
+            return render_template('student_assessment/check_student_2.html', username=session['username'], role=role, student=student, results=results)
 
         # Handle GET requests (show the initial form)
-        if role == "Head of Department":
-            return render_template('student_assessment/check_student_2.html', username=session['username'], role=role)
-        else:
-            return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role)
+        return render_template('student_assessment/check_student_2.html', username=session['username'], role=role)
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
         flash("An error occurred while processing the request.", "danger")
-        if role == "Head of Department":
-            return render_template('student_assessment/check_student_2.html', username=session['username'], role=role)
-        else:
-            return render_template('student_assessment/assessor/check_student_2.html', username=session['username'], role=role)
+        return render_template('student_assessment/check_student_2.html', username=session['username'], role=role)
+
     finally:
         cursor.close()
         connection.close()
+
+
+
+
 
 
 
