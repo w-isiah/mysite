@@ -580,143 +580,158 @@ def download_template():
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
+
+
 @student_bp.route('/upload_excel', methods=['GET', 'POST'])
 def upload_excel():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part', 'danger')
+        file = request.files.get('file')
+
+        if not file or file.filename == '':
+            flash('No file selected', 'danger')
             return redirect(request.url)
-        
-        file = request.files['file']
-        
-        if file.filename == '':
-            flash('No selected file', 'danger')
-            return redirect(request.url)
-        
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-            
-            # Process the uploaded Excel file
-            try:
-                # Read the Excel file using pandas
-                df = pd.read_excel(file_path)
 
-                # Open a database connection
-                connection = get_db_connection()
-                cursor = connection.cursor()
-
-                # List to store valid rows (those that don't have a duplicate reg_no)
-                rows_to_insert = []
-                existing_reg_nos = []
-                errors = []
-                seen_reg_nos = set()  # Set to track seen registration numbers
-                duplicate_reg_nos = []  # List to store duplicate reg_no values within the file
-
-                # Iterate through the DataFrame and check each row
-                for index, row in df.iterrows():
-                    reg_no = row['Registration No']
-                    programme_name = row['Programme']
-                    term = row['Term']
-
-                    # Check for duplicate registration numbers in the uploaded file
-                    if reg_no in seen_reg_nos:
-                        duplicate_reg_nos.append(reg_no)  # Add to the list of duplicates
-                    else:
-                        seen_reg_nos.add(reg_no)  # Add to the seen set
-
-                    # Check if the registration number already exists in the database
-                    cursor.execute("SELECT COUNT(*) FROM student_info WHERE reg_no = %s", (reg_no,))
-                    reg_no_exists = cursor.fetchone()[0]
-
-                    if reg_no_exists > 0:
-                        # If reg_no exists, add it to the list of existing reg_nos
-                        existing_reg_nos.append(reg_no)
-                    else:
-                        # Check if the programme exists in the database
-                        cursor.execute("SELECT COUNT(*) FROM programmes WHERE programme_name = %s", (programme_name,))
-                        programme_exists = cursor.fetchone()[0]
-                        
-                        # Check if the term exists in the database
-                        cursor.execute("SELECT COUNT(*) FROM terms WHERE term = %s", (term,))
-                        term_exists = cursor.fetchone()[0]
-                        
-                        if not programme_exists:
-                            errors.append(f"Programme '{programme_name}' does not exist in the database for row {index + 1}.")
-                        if not term_exists:
-                            errors.append(f"Term '{term}' does not exist in the database for row {index + 1}.")
-                        
-                        if programme_exists and term_exists:
-                            # If both programme and term exist, add the row to the list of rows to insert
-                            rows_to_insert.append(row)
-
-                # If there are any duplicate reg_nos within the file, notify the user
-                if duplicate_reg_nos:
-                    flash(f"Duplicate registration number(s) found in the file: {', '.join(map(str, duplicate_reg_nos))}. Please remove duplicates and try again.", 'danger')
-                    return redirect(request.url)
-
-                # If there are any errors (non-existent programmes or terms), notify the user
-                if errors:
-                    flash('Errors encountered:\n' + '\n'.join(errors), 'danger')
-                    return redirect(request.url)
-
-                # If there are any existing reg_nos, notify the user
-                if existing_reg_nos:
-                    flash(f"Registration number(s) already exist in the database: {', '.join(existing_reg_nos)}. These entries were skipped.", 'warning')
-
-                # Insert the valid rows (those with new reg_nos and valid programmes/terms) into the database
-                for row in rows_to_insert:
-                    student_teacher = row['Student Teacher']
-                    programme_name = row['Programme']
-                    reg_no = row['Registration No']
-                    term = row['Term']
-                    subject = row['Subject']
-                    class_name = row['Class']
-                    teaching_time = row['Teaching Time']
-                    topic = row['Topic']
-                    subtopic = row['Subtopic']
-
-                    # If teaching_time is a datetime or timestamp, ensure it’s properly formatted
-                    if isinstance(teaching_time, datetime):
-                        teaching_time = teaching_time.strftime('%Y-%m-%d %H:%M:%S')
-                    elif isinstance(teaching_time, str):
-                        # If it's a string, try to convert it to datetime first
-                        teaching_time = datetime.strptime(teaching_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
-
-                    # Lookup programme_id from the programmes table
-                    cursor.execute("SELECT id FROM programmes WHERE programme_name = %s", (programme_name,))
-                    programme_result = cursor.fetchone()
-                    programme_id = programme_result[0] if programme_result else None
-
-                    # Lookup term_id from the terms table
-                    cursor.execute("SELECT id FROM terms WHERE term = %s", (term,))
-                    term_result = cursor.fetchone()
-                    term_id = term_result[0] if term_result else None
-
-                    # Insert data into the student_info table
-                    sql = """
-                    INSERT INTO student_info (student_teacher, programme_id, reg_no, subject, term_id, 
-                    class_name, topic, subtopic, teaching_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """
-                    cursor.execute(sql, (student_teacher, programme_id, reg_no, subject, term_id, 
-                                         class_name, topic, subtopic, teaching_time))
-
-                # Commit the changes and close the connection
-                connection.commit()
-                connection.close()
-
-                flash(f'{len(rows_to_insert)} new record(s) uploaded successfully!', 'success')
-                return redirect(url_for('student.upload_excel'))
-            except Exception as e:
-                flash(f'Error processing the file: {e}', 'danger')
-                return redirect(url_for('student.upload_excel'))
-        else:
+        if not allowed_file(file.filename):
             flash('Invalid file format. Please upload an Excel file.', 'danger')
             return redirect(request.url)
 
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        try:
+            df = pd.read_excel(file_path)
+            processed_data, errors, existing_reg_nos, duplicate_reg_nos = validate_excel_data(df)
+
+            if duplicate_reg_nos:
+                flash(f"Duplicate registration numbers found in file: {', '.join(map(str, duplicate_reg_nos))}. Remove duplicates and try again.", 'danger')
+                return redirect(request.url)
+
+            if errors:
+                flash('Errors encountered:\n' + '\n'.join(errors), 'danger')
+                return redirect(request.url)
+
+            if existing_reg_nos:
+                flash(f"Registration numbers already exist: {', '.join(existing_reg_nos)}. These entries were skipped.", 'warning')
+
+            insert_into_database(processed_data)
+
+            flash(f'{len(processed_data)} new record(s) uploaded successfully!', 'success')
+            return redirect(url_for('student.upload_excel'))
+        
+        except pd.errors.EmptyDataError:
+            flash('Uploaded file is empty.', 'danger')
+        except Exception as e:
+            flash(f'Error processing the file: {str(e)}', 'danger')
+
+        return redirect(url_for('student.upload_excel'))
+
     return render_template('student/upload_excel.html', username=session['username'], role=session['role'])
+
+
+
+
+
+
+def validate_excel_data(df):
+    processed_data = []
+    errors = []
+    existing_reg_nos = []
+    duplicate_reg_nos = []
+    seen_reg_nos = set()
+
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+
+        for index, row in df.iterrows():
+            reg_no = row.get('Registration No')
+            programme_name = row.get('Programme')
+            term = row.get('Term')
+
+            # ✅ Essential fields check (excluding optional fields)
+            if pd.isna(reg_no) or pd.isna(programme_name) or pd.isna(term):
+                errors.append(f"Missing required fields in row {index + 1}.")
+                continue
+
+            reg_no = str(reg_no).strip()  # Ensure it's a string
+            
+            if reg_no in seen_reg_nos:
+                duplicate_reg_nos.append(reg_no)
+                continue
+            seen_reg_nos.add(reg_no)
+
+            cursor.execute("SELECT COUNT(*) FROM student_info WHERE reg_no = %s", (reg_no,))
+            if cursor.fetchone()[0] > 0:
+                existing_reg_nos.append(reg_no)
+                continue
+
+            cursor.execute("SELECT id FROM programmes WHERE programme_name = %s", (programme_name,))
+            programme_id = cursor.fetchone()
+
+            cursor.execute("SELECT id FROM terms WHERE term = %s", (term,))
+            term_id = cursor.fetchone()
+
+            if not programme_id:
+                errors.append(f"Programme '{programme_name}' does not exist in row {index + 1}.")
+            if not term_id:
+                errors.append(f"Term '{term}' does not exist in row {index + 1}.")
+
+            if programme_id and term_id:
+                processed_data.append({
+                    'student_teacher': row.get('Student Teacher', ''), 
+                    'programme_id': programme_id[0], 
+                    'reg_no': reg_no,
+                    'subject': row.get('Subject') if not pd.isna(row.get('Subject')) else None,
+                    'term_id': term_id[0], 
+                    'class_name': row.get('Class') if not pd.isna(row.get('Class')) else None,
+                    'topic': row.get('Topic') if not pd.isna(row.get('Topic')) else None,
+                    'subtopic': row.get('Subtopic') if not pd.isna(row.get('Subtopic')) else None,
+                    'teaching_time': format_teaching_time(row.get('Teaching Time'))
+                })
+
+    return processed_data, errors, existing_reg_nos, duplicate_reg_nos
+
+
+
+
+
+
+
+
+
+
+# Function to insert valid data into the database
+def insert_into_database(data):
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        sql = """
+        INSERT INTO student_info (student_teacher, programme_id, reg_no, subject, term_id, 
+                                  class_name, topic, subtopic, teaching_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        for row in data:
+            cursor.execute(sql, (
+                row['student_teacher'], row['programme_id'], row['reg_no'], 
+                row['subject'], row['term_id'], row['class_name'], 
+                row['topic'], row['subtopic'], row['teaching_time']
+            ))
+        connection.commit()
+
+
+
+
+
+# Function to format teaching time correctly
+def format_teaching_time(teaching_time):
+    if isinstance(teaching_time, datetime):
+        return teaching_time.strftime('%Y-%m-%d %H:%M:%S')
+    elif isinstance(teaching_time, str):
+        try:
+            return datetime.strptime(teaching_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            return None  # Handle invalid date formats
+    return None
+
 
 
 
