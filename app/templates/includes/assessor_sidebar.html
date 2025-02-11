@@ -53,6 +53,18 @@
                 <p>Assigned Students</p>
               </a>
             </li>
+
+
+
+             <li class="nav-item">
+              <a href="{{ url_for('student.manage_student') }}" class="nav-link {% if 'assigned_student' in segment %} active {% endif %}">
+                <i class="far fa-circle nav-icon"></i>
+                <p> Students Data</p>
+              </a>
+            </li>
+
+
+
           
             <!-- Placeholder Item (can be replaced or removed) -->
             <li class="nav-item">
@@ -83,12 +95,7 @@
                 <p>Assessment Status</p>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="{{url_for('assessment.check_student')}}" class="nav-link {% if 'check_student' in segment %} active {% endif %}">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Assess</p>
-              </a>
-            </li>
+          
           </ul>
         </li>
 

@@ -38,11 +38,9 @@
     {% endif %}
     {% endwith %}
     <div class="container-fluid">
-
         <div class="row justify-content-center">
             <!-- Form to Edit Student Information -->
             <div class="col-md-8 col-lg-6">
-                <!-- Widget Box for Student Details -->
                 <div class="card card-default">
                     <div class="card-header">
                         <h3 class="card-title">Edit Student Info</h3>
@@ -55,92 +53,52 @@
 
                     <!-- Widget Content for the Form -->
                     <div class="card-body">
-                        <form action="{{ url_for('student.edit_student', student_id=student.id) }}" method="POST" class="form-horizontal">
+                        <form action="{{ url_for('student.a_edit_student', student_id=student.id) }}" method="POST" class="form-horizontal">
                             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-
-                            <!-- Student Details Section -->
                             <fieldset>
                                 <legend>Student Teacher Details</legend>
-
-                                <!-- Student Teacher Input -->
-                                <div class="form-group">
-                                    <label for="student_teacher">Student Teacher:</label>
-                                    <input type="text" id="student_teacher" name="student_teacher" class="form-control" 
-                                    value="{{ student.student_teacher }}" required />
-                                </div>
-
                                 
-
-                                <!-- term Selection -->
-                                <div class="form-group">
-                                    <label for="term">Term:</label>
-                                    <select name="term_id" id="term" class="form-control select2" required>
-                                        {% for term in terms %}
-                                        <option value="{{ term.id }}" {% if term.id == student.term_id %}selected{% endif %}>
-                                            {{ term.term }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-
-
-
-
-
-                                <!-- Programme Selection -->
-                                <div class="form-group">
-                                    <label for="programme">Programme:</label>
-                                    <select name="programme_id" id="programme" class="form-control select2" required>
-                                        {% for programme in programmes %}
-                                        <option value="{{ programme.id }}" {% if programme.id == student.programme_id %}selected{% endif %}>
-                                            {{ programme.programme_name }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-
-                                <!-- Registration Number Input -->
+                                <!-- Registration Number (Disabled for editing) -->
                                 <div class="form-group">
                                     <label for="reg_no">Registration No:</label>
-                                    <input type="text" id="reg_no" name="reg_no" class="form-control" value="{{ student.reg_no }}" required />
+                                    <input type="text" id="reg_no" name="reg_no" class="form-control" value="{{ student.reg_no }}" disabled />
                                 </div>
 
                                 <!-- Subject Input -->
                                 <div class="form-group">
                                     <label for="subject">Subject:</label>
-                                    <input type="text" id="subject" name="subject" class="form-control" value="{{ student.subject }}" />
+                                    <input type="text" id="subject" name="subject" class="form-control" value="{{ student.subject }}" required />
                                 </div>
 
                                 <!-- Class Input -->
                                 <div class="form-group">
                                     <label for="class">Class:</label>
-                                    <input type="text" id="class" name="class" class="form-control" value="{{ student.class_name }}" />
+                                    <input type="text" id="class" name="class" class="form-control" value="{{ student.class_name }}" required />
                                 </div>
 
                                 <!-- Teaching Time Input -->
                                 <div class="form-group">
                                     <label for="teaching_time">Teaching Time:</label>
-                                    <input type="datetime-local" id="teaching_time" name="teaching_time" class="form-control" value="{{ student.teaching_time | replace(' ', 'T') }}" />
+                                    <input type="datetime-local" id="teaching_time" name="teaching_time" class="form-control" value="{{ student.teaching_time | replace(' ', 'T') }}" required />
                                 </div>
 
                                 <!-- Topic Input -->
                                 <div class="form-group">
                                     <label for="topic">Topic:</label>
-                                    <input type="text" id="topic" name="topic" class="form-control" value="{{ student.topic }}" />
+                                    <input type="text" id="topic" name="topic" class="form-control" value="{{ student.topic }}" required />
                                 </div>
 
                                 <!-- Subtopic Input -->
                                 <div class="form-group">
                                     <label for="subtopic">Subtopic:</label>
-                                    <input type="text" id="subtopic" name="subtopic" class="form-control" value="{{ student.subtopic }}" />
+                                    <input type="text" id="subtopic" name="subtopic" class="form-control" value="{{ student.subtopic }}" required />
                                 </div>
-
                             </fieldset>
 
                             <!-- Form Action Buttons -->
                             <div class="d-flex justify-content-end">
-                                <button type="submit" id="submitBtn" class="btn btn-success">Update</button>
+                                <button type="submit" class="btn btn-success">Update</button>
                             </div>
                         </form>
                     </div>
@@ -152,22 +110,11 @@
 {% endblock content %}
 
 {% block javascripts %}
-<!-- Include necessary scripts -->
 <script src="/static/assets/plugins/jquery/jquery.min.js"></script>
 <script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/static/assets/plugins/select2/js/select2.full.min.js"></script>
-<script src="/static/assets/plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
 <script src="/static/assets/plugins/moment/moment.min.js"></script>
-<script src="/static/assets/plugins/inputmask/jquery.inputmask.min.js"></script>
-<script src="/static/assets/plugins/daterangepicker/daterangepicker.js"></script>
-<script src="/static/assets/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
-<script src="/static/assets/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
-<script src="/static/assets/plugins/bootstrap-switch/js/bootstrap-switch.min.js"></script>
 <script src="/static/assets/js/adminlte.min.js"></script>
-<script src="/static/assets/js/demo.js"></script>
-<script src="/static/assets/js/pages/dashboard.js"></script>
-<script src="/static/assets/js/mine.js"></script>
-
 <script>
   $(function () {
     // Initialize Select2 for dropdowns

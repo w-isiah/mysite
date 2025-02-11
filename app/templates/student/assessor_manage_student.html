@@ -166,7 +166,7 @@
                           <a href="{{ url_for('student.register_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Register Student">
                             <i class="fas fa-edit"> Register</i>
                           </a>
-                          <a href="{{ url_for('student.edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Edit Student">
+                          <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Edit Student">
                             <i class="fas fa-edit"> Edit</i>
                           </a>
                           <a href="{{ url_for('student.delete_student', get_id=student.student_id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this student: {{ student.reg_no }}?');" data-toggle="tooltip" data-placement="top" title="Delete Student">
