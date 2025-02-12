@@ -337,8 +337,6 @@ def assess_v1(student_id):
 
 
 
-
-
 @assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
 def assessment_report():
     try:
@@ -366,7 +364,7 @@ def assessment_report():
             term_id = request.form.get('term_id')
             reg_no = request.form.get('reg_no')
 
-            # SQL query to fetch assessment data
+            # SQL query to fetch assessment data from 'marks' table, excluding 'scores' table
             query = """
                 SELECT
                     si.id AS student_id,
@@ -375,7 +373,7 @@ def assessment_report():
                     si.subject,
                     t.term,
                     u.username AS assessor,
-                    m.marks,
+                    m.marks AS total_marks,
                     CASE
                         WHEN m.marks IS NULL THEN 'Not Assessed'
                         ELSE 'Assessed'
@@ -393,7 +391,7 @@ def assessment_report():
 
             # Add filters dynamically
             filters = []
-            if programme_id:
+            if programme_id:    
                 query += " AND si.programme_id = %s"
                 filters.append(programme_id)
             if term_id:
@@ -423,7 +421,7 @@ def assessment_report():
                 pivot_table = df.pivot_table(
                     index=["reg_no", "student_name", "subject", "term", "status"],
                     columns="assessor",
-                    values="marks",
+                    values="total_marks",
                     aggfunc="max",
                     fill_value=0
                 ).reset_index()
@@ -433,9 +431,9 @@ def assessment_report():
                     col for col in pivot_table.columns
                     if col not in ['reg_no', 'student_name', 'subject', 'term', 'status']
                 ]
-                pivot_table['average_score'] = pivot_table[score_columns].replace(0, pd.NA).mean(axis=1)
+                pivot_table['average_marks'] = pivot_table[score_columns].replace(0, pd.NA).mean(axis=1)
 
-                # Convert pivot table to dictionary
+                # Convert pivot table to dictionary for front-end
                 pivot_data = pivot_table.to_dict(orient="records")
 
                 # Handle export to Excel

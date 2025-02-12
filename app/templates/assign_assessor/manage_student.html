@@ -93,7 +93,7 @@
                                     <div class="form-group mr-2">
                                         <label for="term" class="mr-2">Term:</label>
                                         <select name="term" id="term" class="form-control select2">
-                                            <option value="" disabled="selected">Select Term</option>
+                                            <option value="" selected  disabled="selected">Select Term</option>
                                             {% for term in terms %}
                                                 <option value="{{ term.id }}" 
                                                     {% if request.form.get('term') == term.id %} selected {% endif %}>

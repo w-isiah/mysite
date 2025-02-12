@@ -152,18 +152,13 @@
                                             {% if student.status == 'Assessed' %}
                                             <span class="badge badge-success">Assessed</span> - {{ student.mark }}
                                             {% else %}
-                                            <span class="badge badge-warning">Not Assessed</span>
+                                            <span class="badge badge-warning">Unassessed</span>
 
-
-                                        
                                           <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
                                               <i class="icon-edit"></i> Assess Now
                                           </a>
-
-
-
                                           {% endif %}
-                                      </td> <!-- Status column displaying mark or "Not Assessed" -->
+                                      </td> <!-- Status column displaying mark or "Unassessed" -->
                                   </tr>
                                   {% endfor %}
                               </tbody>

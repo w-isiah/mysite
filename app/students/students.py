@@ -157,9 +157,9 @@ def add_student():
         except Error as e:
             connection.rollback()
             flash(f'Error: {e}', 'danger')
-            return render_template('student/add_student.html', programmes=programmes, terms=terms)
+            return render_template('student/add_student.html',username=session['username'], programmes=programmes, terms=terms)
 
-    return render_template('student/add_student.html', programmes=programmes, terms=terms)
+    return render_template('student/add_student.html',username=session['username'], programmes=programmes, terms=terms)
 
 
 
@@ -693,7 +693,6 @@ def manage_assigned_student():
 
 
 
-
 @student_bp.route('/manage_assess_students', methods=['GET', 'POST'])
 def manage_assess_student():
     try:
@@ -769,21 +768,21 @@ def manage_assess_student():
             term_id = student['term_id']
             student_id = student['student_id']
 
-            # Query to check if the student has a mark for the same term_id
+            # Query to check if the student has a mark for the same term_id by this specific assessor
             mark_query = """
             SELECT marks 
             FROM marks 
-            WHERE student_id = %s AND term_id = %s
+            WHERE student_id = %s AND term_id = %s AND assessor_id = %s
             LIMIT 1
             """
-            cursor.execute(mark_query, (student_id, term_id))
+            cursor.execute(mark_query, (student_id, term_id, session['id']))
             mark_result = cursor.fetchone()
 
             if mark_result:
                 student['status'] = 'Assessed'
                 student['mark'] = mark_result['marks']  # Store the mark if available
             else:
-                student['status'] = 'Not Assessed'
+                student['status'] = 'Unassessed'
                 student['mark'] = None
 
         cursor.close()

@@ -33,6 +33,19 @@ def fetch_programmes_and_terms():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 @assign_assessor_bp.route('/manage_students', methods=['GET', 'POST'])
 def manage_student():
     try:
@@ -86,6 +99,7 @@ def manage_student():
                 conditions.append("si.term_id = %s")
                 params.append(term)
 
+            # Add filtering by registration number (Reg No)
             if reg_no := request.form.get('reg_no'):
                 conditions.append("si.reg_no LIKE %s")
                 params.append(f"%{reg_no}%")
@@ -156,20 +170,20 @@ def assign_assessor():
                     flash(f'No term found for student {student_id}, skipping assignment.', 'warning')
                     continue
 
-                # Check if the student is already assigned an assessor for the same term_id
+                # Check if the student has already been assigned to the same assessor for this term
                 check_assignment_query = """
                 SELECT * FROM assign_assessor 
-                WHERE student_id = %s AND term_id = %s
+                WHERE student_id = %s AND term_id = %s AND assessor_id = %s
                 """
-                cursor.execute(check_assignment_query, (student_id, term_id))
+                cursor.execute(check_assignment_query, (student_id, term_id, assessor_id))
                 existing_assignment = cursor.fetchone()
 
                 if existing_assignment:
-                    # If the student is already assigned an assessor for this term, skip assigning
-                    flash(f'Student {student_id} is already assigned for this term.', 'warning')
+                    # If the student is already assigned to this assessor for the same term, skip assignment
+                    flash(f'Student {student_id} is already assigned to this assessor for this term.', 'warning')
                     continue
                 else:
-                    # If the student is not assigned for this term, insert a new record for assignment
+                    # If the student has not been assigned to this assessor for the term, proceed with assignment
                     insert_query = """
                     INSERT INTO assign_assessor (assessor_id, student_id, assigned_by, term_id)
                     VALUES (%s, %s, %s, %s)
@@ -194,4 +208,6 @@ def assign_assessor():
 
         # Redirect back to the manage students page
         return redirect(url_for('assign_assessor.manage_student'))
+
+
 
