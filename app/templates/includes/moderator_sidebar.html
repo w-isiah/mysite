@@ -11,11 +11,13 @@
     <!-- Sidebar user panel (optional) -->
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
       <div class="image">
-        <img src="/static/assets/img/mine.png" class="img-circle elevation-2" alt="User Image">
+        <img src="/static/uploads/imgs/{{session['profile_image']}}" class="img-circle elevation-2" alt="User Image">
       </div>
       <div class="info">
         <a href="{{ url_for('auth.logout') }}" class="d-block">
-          {{ username }} - Logout
+
+          {{session['first_name']}}<br> {{session['last_name']}} - Logout
+
         </a>
       </div>
     </div>
@@ -215,31 +217,7 @@
           </ul>
         </li>
 
-        <!-- Ratings -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-star"></i>
-            <p>
-              Ratings
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('ratings.manage_ratings') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Ratings</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('ratings.add_rating') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Add Rating</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-
+      
 
 
 

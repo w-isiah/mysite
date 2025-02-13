@@ -337,6 +337,8 @@ def assess_v1(student_id):
 
 
 
+from flask import flash, redirect, url_for
+
 @assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
 def assessment_report():
     try:
@@ -410,8 +412,8 @@ def assessment_report():
             cursor.execute(query, tuple(filters))
             data = cursor.fetchall()
 
-            # Transform data into pivot format
             if data:
+                # Data is not empty, proceed with pivoting
                 df = pd.DataFrame(data)
 
                 # Extract unique assessors
@@ -448,9 +450,17 @@ def assessment_report():
                         download_name="assessment_data.xlsx",
                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
+                
+                # Flash success message after successful data fetching
+                flash('Assessment data fetched successfully!', 'success')
+
+            else:
+                # Flash message if no data is found
+                flash('No data found for the given filters.', 'warning')
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
+        flash(f"An error occurred: {str(e)}", 'danger')
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
@@ -459,7 +469,7 @@ def assessment_report():
         if conn:
             conn.close()
 
-    # Render the template
+    # Render the template with flash messages
     return render_template(
         'assessment_v1/assessment_report.html',
         role=session.get('role'),

@@ -155,7 +155,7 @@
                                 <td>{{ student.topic }}</td>
                                 <td>{{ student.subtopic }}</td>
                                 <td>{{ student.teaching_time }}</td>
-                                <td>{{ student.programme_name }}<br><small>{{ student.programme_description }}</small></td>
+                                <td>{{ student.programme_name }}</td>
                                 <td>
                                     <div class="btn-group" role="group">
                                         <a href="{{ url_for('student.register_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Register Student">

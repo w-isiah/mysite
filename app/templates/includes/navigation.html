@@ -8,10 +8,10 @@
       </a>
     </li>
     <li class="nav-item d-none d-sm-inline-block">
-      <a href="{{url_for('main.index')}}" class="nav-link">Home</a>
+      <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
     </li>
     <li class="nav-item d-none d-sm-inline-block">
-      <a href="#" class="nav-link">Action2</a>
+      <a href="{{ url_for('auth.edit_user_profile', id=session['id']) }}" class="nav-link">User Profile</a>
     </li>
   </ul>
 
@@ -26,12 +26,9 @@
       <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
         <span class="dropdown-item dropdown-header">15 Notifications</span>
         <div class="dropdown-divider"></div>
-       
-        
+        <!-- Add more notification items here -->
+      </div>
     </li>
-    
-    <!-- Control Sidebar -->
-    
   </ul>
 </nav>
 <!-- /.navbar -->

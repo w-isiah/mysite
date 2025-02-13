@@ -17,7 +17,8 @@ csrf = CSRFProtect(app)
 
 
 # Path to save uploaded files (you can change this as needed)
-UPLOAD_FOLDER = 'uploads/'
+#UPLOAD_FOLDER = 'uploads/'
+UPLOAD_FOLDER = 'app/static/uploads/imgs'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
