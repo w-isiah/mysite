@@ -303,7 +303,7 @@ def assess_v1(student_id):
         )
     elif role == 'School Practice Supervisor':
         return render_template(
-            'assessment_v1/assessor/add_assessment.html', 
+            'modulate/assessor_add_assessment.html', 
             schools=schools, 
             username=session['username'],
             role=session['role'],

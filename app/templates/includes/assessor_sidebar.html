@@ -99,6 +99,42 @@
           </ul>
         </li>
 
+
+ <!-- Assessment Section -->
+           <!-- Miscellaneous Section -->
+        <li class="nav-header">MODULATE</li>
+        <li class="nav-item has-treeview {% if 'assessment' in segment %} menu-open {% endif %}">
+          <a href="#" class="nav-link {% if 'assessment' in segment %} active {% endif %}">
+            <i class="nav-icon fas fa-clipboard-list"></i>
+            <p>
+              Assessment
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+         
+            <li class="nav-item">
+              <a href="{{url_for('student.m_manage_assess_student')}}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Students To Assess</p>
+              </a>
+            </li>
+          
+          </ul>
+        </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
         <!-- Miscellaneous Section -->
         <li class="nav-header">System Docs</li>
         <li class="nav-item">

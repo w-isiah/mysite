@@ -2,7 +2,7 @@
 
 {% block title %}Add Aspect{% endblock %}
 
-{% block body_class %}assessor_sidebar-mini{% endblock body_class %}
+{% block body_class %}assessor_sidebar-mini{% endblock %}
 
 {% block stylesheets %}
 <!-- Include necessary stylesheets -->
@@ -53,19 +53,27 @@
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-              <li class="breadcrumb-item active">Assessment forms</li>
+              <li class="breadcrumb-item active">Assessment Forms</li>
             </ol>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Main content -->
+    <!-- Main Content -->
     <section class="content">
       <div class="container-fluid">
         <div class="card card-default">
           <div class="card-header">
             <h3 class="card-title">Assessment Forms</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+              </button>
+              <button type="button" class="btn btn-tool" data-card-widget="remove">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
           </div>
           <div class="card-body">
             <div class="row">
@@ -79,10 +87,10 @@
                 </center>
 
                 <!-- Start of the Form -->
-                <form action="{{ url_for('scores.save_scores') }}" method="POST" class="form-horizontal">
+                <form action="{{ url_for('modulate.save_scores') }}" method="POST" class="form-horizontal">
                   <!-- CSRF Token for security -->
                   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
+                  
                   <!-- School Category -->
                   <center>
                     <div class="form-group">
@@ -90,7 +98,7 @@
                       <select name="school_id" id="school_id" class="form-control select2" required>
                         <option value="" selected disabled="selected">Select a School</option>
                         {% for school in schools %}
-                        <option value="{{ school.id }}">{{ school.name }}</option>
+                          <option value="{{ school.id }}">{{ school.name }}</option>
                         {% endfor %}
                       </select>
                     </div>
@@ -99,67 +107,33 @@
                   <input name="student_teacher_id" value="{{ student.id }}" type="hidden" />
                   <input name="term_id" value="{{ student.term_id }}" type="hidden" />
 
-                  <!-- Aspect Details (Card Layout for each aspect) -->
-                  {% for i in data %}
-                  <div class="card mb-3">
-                    <div class="card-header">
-                      <h5>{{ i.aspect_name }} <small class="text-muted">({{ i.description }})</small></h5>
-                      <em>{{ i.competence }}</em>
-                    </div>
-                    <div class="card-body">
-                      <div class="form-group row">
-                        <label for="criteria_{{ i.criteria_id }}" class="col-sm-3 col-form-label">Criteria:</label>
-                        <div class="col-sm-9">
-                          <h5>{{ i.criteria_name }}</h5>
-                        </div>
-                      </div>
+                  <!-- Marks Input -->
+                  <div class="form-group">
+                   <label for="marks">Marks:</label>
+                   <input type="number" id="marks" name="marks" class="form-control" placeholder="Enter Marks" required min="0" max="100" />
+                 </div>
 
-                      <!-- Dynamic Score Selection from Ratings Table -->
-                      <div class="form-group row">
-                        <label for="score_{{ i.criteria_id }}" class="col-sm-3 col-form-label">Score:</label>
-                        <div class="col-sm-9">
-                          <select name="score[]" id="score_{{ i.criteria_id }}" class="form-control select2" required>
-                            {% for rating in ratings_by_criteria[i.criteria_id] %}
-                              <option value="{{ rating.mark }}" {% if rating.mark == 0 %}selected{% endif %}>
-                                {{ rating.rating }} ({{ rating.mark }})
-                              </option>
-                            {% endfor %}
-                          </select>
-                        </div>
-                      </div>
+                 <!-- Assessment Type (Hidden) -->
+                 <input type="text" id="assessment_type" name="assessment_type" hidden value="modulate" class="form-control" />
 
-                      <!-- Hidden Inputs for Aspect and Criteria IDs -->
-                      <input type="hidden" name="aspect_id[]" value="{{ i.aspect_id }}" />
-                      <input type="hidden" name="criteria_id[]" value="{{ i.criteria_id }}" />
-                    </div>
-                  </div>
-                  {% endfor %}
+                 <!-- Submit Button -->
+                 <div class="form-actions text-center mt-4">
+                  <button type="submit" class="btn btn-success btn-lg">Save Data</button>
+                </div>
 
-                  <!-- Comment Field -->
-                  <div class="form-group row">
-                    <label for="comment" class="col-sm-3 col-form-label">Comment:</label>
-                    <div class="col-sm-9">
-                      <textarea name="comment" id="comment" class="form-control" rows="4" placeholder="Enter your comment" required></textarea>
-                    </div>
-                  </div>
-
-                  <!-- Submit Button -->
-                  <div class="form-actions text-center mt-4">
-                    <button type="submit" class="btn btn-success btn-lg">Save Data</button>
-                  </div>
-                </form>
-                <!-- End of the Form -->
-              </div>
+              </form>
+              <!-- End of the Form -->
             </div>
           </div>
         </div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 </div>
 {% endblock content %}
 
 {% block javascripts %}
+<!-- Include necessary scripts -->
 <script src="/static/assets/plugins/jquery/jquery.min.js"></script>
 <script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/static/assets/plugins/select2/js/select2.full.min.js"></script>
@@ -181,4 +155,4 @@
     $('.select2').select2();
   });
 </script>
-{% endblock %}
+{% endblock javascripts %}

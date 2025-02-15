@@ -802,3 +802,115 @@ def manage_assess_student():
         print(f"Error occurred: {str(e)}")  # For debugging
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
+
+
+
+@student_bp.route('/m_manage_assess_students', methods=['GET', 'POST'])
+def m_manage_assess_student():
+    try:
+        # Ensure that the session has a valid assessor id
+        if 'id' not in session:
+            flash('You must be logged in to access this page', 'danger')
+            return redirect(url_for('auth.login'))
+
+        # Database connection and fetching programmes and terms
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        programmes, terms = fetch_programmes_and_terms()
+
+        # Fetch assessors with corrected query
+        assessors_query = "SELECT id, username FROM users WHERE role != 'admin' AND role != 'Head of Department'"
+        cursor.execute(assessors_query)
+        assessors = cursor.fetchall()
+
+        # Base query for student information, modified to only include students assigned to the current assessor
+        query = """
+        SELECT 
+            si.id AS student_id,
+            si.student_teacher,  
+            si.reg_no, 
+            si.subject,
+            si.class_name, 
+            si.topic, 
+            si.subtopic, 
+            si.teaching_time,
+            p.programme_name, 
+            p.description AS programme_description,
+            t.term AS term,
+            a.assessor_id IS NOT NULL AS assigned,
+            u.username AS assessor_name,  -- Added to fetch assessor's name
+            si.term_id AS term_id
+        FROM student_info si
+        LEFT JOIN programmes p ON si.programme_id = p.id
+        LEFT JOIN terms t ON si.term_id = t.id
+        LEFT JOIN m_assign_assessor a ON si.id = a.student_id
+        LEFT JOIN users u ON a.assessor_id = u.id
+        WHERE a.assessor_id = %s
+        """
+
+        # Prepare params for filtering
+        params = [session['id']]
+
+        # If it's a POST request, add filters to the query
+        if request.method == 'POST':
+            conditions = []
+
+            # Handle dynamic filtering
+            if programme := request.form.get('programme'):
+                conditions.append("si.programme_id = %s")
+                params.append(programme)
+            
+            if term := request.form.get('term'):
+                conditions.append("si.term_id = %s")
+                params.append(term)
+
+            if reg_no := request.form.get('reg_no'):
+                conditions.append("si.reg_no LIKE %s")
+                params.append(f"%{reg_no}%")
+
+            if conditions:
+                query += " AND " + " AND ".join(conditions)
+
+        # Execute query to fetch students based on filtering
+        cursor.execute(query, params)
+        student_info = cursor.fetchall()
+
+        # For each student, check if a mark exists for the same term_id in the marks table
+        for student in student_info:
+            term_id = student['term_id']
+            student_id = student['student_id']
+
+            # Query to check if the student has a mark for the same term_id by this specific assessor
+            mark_query = """
+            SELECT marks 
+            FROM  mudulate_marks 
+            WHERE student_id = %s AND term_id = %s AND assessor_id = %s
+            LIMIT 1
+            """
+            cursor.execute(mark_query, (student_id, term_id, session['id']))
+            mark_result = cursor.fetchone()
+
+            if mark_result:
+                student['status'] = 'Assessed'
+                student['mark'] = mark_result['marks']  # Store the mark if available
+            else:
+                student['status'] = 'Unassessed'
+                student['mark'] = None
+
+        cursor.close()
+        conn.close()
+
+        # Pass the information to the template
+        return render_template('student/m_manage_assess_student.html', 
+                               username=session['username'], 
+                               role=session['role'],
+                               student_info=student_info, 
+                               programmes=programmes, 
+                               terms=terms,
+                               assessors=assessors)
+
+    except Exception as e:
+        # Log the error and provide feedback to the user
+        print(f"Error occurred: {str(e)}")  # For debugging
+        flash(f"An error occurred while fetching data: {str(e)}", 'danger')
+        return redirect(url_for('main.index'))
