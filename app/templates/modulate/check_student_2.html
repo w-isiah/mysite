@@ -67,7 +67,7 @@
             <!-- Student Information Form -->
             <div class="box box-primary">
               <div class="box-body">
-                <form method="POST" action="{{ url_for('moderate.check_student') }}">
+                <form method="POST" action="{{ url_for('modulate.check_student') }}">
                   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                   <div class="form-group">
                     <label for="reg_no">Student Registration Number</label>
@@ -101,7 +101,7 @@
                   {% if message %}
                     <div class="alert alert-warning">{{ message }}</div>
                     <h4>Assessment:  
-                      <a href="{{ url_for('moderate.assess_v1', student_id=student.id) }}" class="btn btn-warning btn-sm">
+                      <a href="{{ url_for('modulate.assess_v1', student_id=student.id) }}" class="btn btn-warning btn-sm">
                         <i class="icon-edit"></i> Assess Now
                       </a>
                     </h4>
@@ -116,7 +116,7 @@
                             {% if result.message == 'Not Assessed' %}
                               <p>Status: <span class="status-false">Not Assessed</span></p>
                               <h4>Assessment:  
-                                <a href="{{ url_for('moderate.assess_v1', student_id=student.id) }}" class="btn btn-warning btn-sm">
+                                <a href="{{ url_for('modulate.assess_v1', student_id=student.id) }}" class="btn btn-warning btn-sm">
                                   <i class="icon-edit"></i> Assess Now
                                 </a>
                               </h4>

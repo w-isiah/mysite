@@ -3,9 +3,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.db import get_db_connection
 
 # Initialize blueprint
-moderate_bp = Blueprint('moderate', __name__)
+modulate_bp = Blueprint('modulate', __name__)
 
-@moderate_bp.route('/manage_students', methods=['GET', 'POST'])
+@modulate_bp.route('/manage_students', methods=['GET', 'POST'])
 def manage_students():
     try:
         # Database connection and fetching programmes and terms
@@ -86,7 +86,7 @@ def manage_students():
 
 
 
-@moderate_bp.route('/add_marks', methods=['GET', 'POST'])
+@modulate_bp.route('/add_marks', methods=['GET', 'POST'])
 def add_marks():
     try:
         # Database connection
@@ -125,7 +125,7 @@ def add_marks():
 
             # Insert the marks into the 'marks' table
             cursor.execute("""
-                INSERT INTO marks (student_id, term_id, assessor_id, school_id, marks, assessment_type, date_awarded)
+                INSERT INTO mudulate_marks (student_id, term_id, assessor_id, school_id, marks, assessment_type, date_awarded)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, [student_id, term_id, session["id"], school_id, marks, assessment_type, date_awarded])
 
@@ -167,7 +167,7 @@ def add_marks():
 
 
 
-@moderate_bp.route('/check_student', methods=['GET', 'POST'])
+@modulate_bp.route('/check_student', methods=['GET', 'POST'])
 def check_student():
     role = session.get('role')  # Get the logged-in user's role
     role = role.strip()
@@ -188,13 +188,13 @@ def check_student():
 
             if not student:
                 if role == "Head of Department":
-                    return render_template('moderate/check_student_2.html', role=role, message="No student found with the given registration number.")
+                    return render_template('modulate/check_student_2.html', role=role, message="No student found with the given registration number.")
                 else:
-                    return render_template('moderate/assessor/check_student_2.html', role=role, message="No student found with the given registration number.")
+                    return render_template('modulate/assessor/check_student_2.html', role=role, message="No student found with the given registration number.")
 
             # Fetch student marks ONLY for the logged-in assessor
             cursor.execute("""
-                SELECT * FROM marks 
+                SELECT * FROM mudulate_marks 
                 WHERE student_id = %s AND assessor_id = %s
             """, (student['id'], user_id))  # Filter by assessor_id
             student_marks = cursor.fetchall()
@@ -207,9 +207,9 @@ def check_student():
             # If no marks are found, mark the student as "Not Assessed"
             if not student_marks:
                 if role == "Head of Department":
-                    return render_template('moderate/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
+                    return render_template('modulate/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
                 else:
-                    return render_template('moderate/assessor/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
+                    return render_template('modulate/assessor/check_student_2.html', username=session['username'], role=role, student=student, message="Student has not been assessed yet. Please assess them.")
 
             # Prepare results for each term (fetch term and marks)
             results = []
@@ -235,23 +235,24 @@ def check_student():
 
             # Return the template with results
             if role == "Head of Department":
-                return render_template('moderate/check_student_2.html', username=session['username'], role=role, student=student, results=results)
+                return render_template('modulate/check_student_2.html', username=session['username'], role=role, student=student, results=results)
             else:
-                return render_template('moderate/assessor/check_student_2.html', username=session['username'], role=role, student=student, results=results)
+                return render_template('modulate/assessor/check_student_2.html', username=session['username'], role=role, student=student, results=results)
 
         # Handle GET requests (show the initial form)
         if role == "Head of Department":
-            return render_template('moderate/check_student_2.html', username=session['username'], role=role)
+            return render_template('modulate/check_student_2.html', username=session['username'], role=role)
         else:
-            return render_template('moderate/assessor/check_student_2.html', username=session['username'], role=role)
+            return render_template('modulate/assessor/check_student_2.html', username=session['username'], role=role)
 
     except Exception as e:
-        logging.error(f"Error occurred: {e}")
+        #logging.error(f"Error occurred: {e}")
+        print(f'{e}')
         flash("An error occurred while processing the request.", "danger")
         if role == "Head of Department":
-            return render_template('moderate/check_student_2.html', username=session['username'], role=role)
+            return render_template('modulate/check_student_2.html', username=session['username'], role=role)
         else:
-            return render_template('moderate/assessor/check_student_2.html', username=session['username'], role=role)
+            return render_template('modulate/assessor/check_student_2.html', username=session['username'], role=role)
     finally:
         cursor.close()
         connection.close()
@@ -267,7 +268,7 @@ def check_student():
 
 
 
-@moderate_bp.route('/assess_v1/<int:student_id>', methods=['GET', 'POST'])
+@modulate_bp.route('/assess_v1/<int:student_id>', methods=['GET', 'POST'])
 def assess_v1(student_id):
     role = session.get('role')
     
@@ -293,7 +294,7 @@ def assess_v1(student_id):
     # Based on user role, render appropriate template
     if role == 'Head of Department':
         return render_template(
-            'moderate/add_assessment.html', 
+            'modulate/add_assessment.html', 
             schools=schools,
             username=session['username'],
             role=session['role'], 
@@ -315,8 +316,89 @@ def assess_v1(student_id):
 
 
 
-@moderate_bp.route("/save_scores", methods=["POST"])
+@modulate_bp.route("/save_scores", methods=["POST"])
 def save_scores():
+    role0 = session.get('role')
+    
+    # Ensure the user is logged in by checking the session
+    if "id" not in session:
+        flash("You must be logged in to submit scores.", "danger")
+        return redirect(url_for("auth.login"))
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Get form data
+        assessor_id = session["id"]
+        student_id = request.form.get("student_teacher_id")
+        term_id = request.form.get("term_id")
+        school_id = request.form.get("school_id")
+
+        print(f"Received data: student_id={student_id}, term_id={term_id}, school_id={school_id}")
+
+        # Validate form inputs
+        if not all([student_id, term_id, school_id]):
+            flash("Missing required fields. Please check your input.", "danger")
+            return redirect(url_for("main.index"))
+
+        # Prepare marks data (assuming 'marks' input from form)
+        marks = request.form.get("marks")
+
+        # Validate the marks input (ensure it is a number)
+        try:
+            marks = float(marks)
+        except ValueError:
+            flash("Invalid marks. Please enter a valid number.", "danger")
+            return redirect(url_for("main.index"))
+
+        # Insert into marks table (insert only one record)
+        cursor.execute("""
+            INSERT INTO mudulate_marks (student_id, assessor_id, term_id, school_id, marks, assessment_type, date_awarded)
+            VALUES (%s, %s, %s, %s, %s, %s, CURDATE())
+            ON DUPLICATE KEY UPDATE marks = %s, date_awarded = CURDATE()
+        """, (student_id, assessor_id, term_id, school_id, marks, "modulate", marks))
+
+        # Commit the transaction
+        conn.commit()
+        print(f"Inserted into marks table: student_id={student_id}, assessor_id={assessor_id}, marks={marks}")
+
+        flash("Marks saved successfully!", "success")
+
+        # Render a summary page with the saved data based on the role
+        if role0 == "Head of Department":
+            return render_template("modulate/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
+        elif role0 == "School Practice Supervisor":
+            return render_template("scores/assessor/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
+        else:
+            flash("Unauthorized role. Cannot view the summary.", "danger")
+            return redirect(url_for("main.index"))
+
+    except Exception as e:
+        logging.error(f"An error occurred while saving scores: {str(e)}")
+        flash(f"An error occurred while saving scores: {str(e)}", "danger")
+        return redirect(url_for("main.index"))
+
+    finally:
+        conn.close()  # Always close the connection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@modulate_bp.route("/save_modulate_scores", methods=["POST"])
+def save_modulate_scores():
     role0 = session.get('role')
     
     # Ensure the user is logged in by checking the session
@@ -367,7 +449,7 @@ def save_scores():
 
         # Render a summary page with the saved data based on the role
         if role0 == "Head of Department":
-            return render_template("moderate/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
+            return render_template("modulate/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
         elif role0 == "School Practice Supervisor":
             return render_template("scores/assessor/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
         else:

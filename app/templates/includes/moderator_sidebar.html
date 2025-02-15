@@ -165,6 +165,8 @@
         </li>
 
 
+
+
         <!-- Moderate -->
         <li class="nav-item has-treeview">
           <a href="#" class="nav-link">
@@ -193,30 +195,55 @@
 
 
 
-    <!-- Aspects -->
-    <li class="nav-item has-treeview">
-      <a href="#" class="nav-link">
-        <i class="nav-icon fas fa-cogs"></i>
-        <p>
-          Aspect Questions
-          <i class="right fas fa-angle-left"></i>
-        </p>
-      </a>
-      <ul class="nav nav-treeview">
-        <li class="nav-item">
-          <a href="{{ url_for('aspects.manage_aspects') }}" class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>View Aspects</p>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="{{ url_for('aspects.add_aspects') }}" class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Add Aspect</p>
-          </a>
-        </li>
-      </ul>
-    </li>
+      <!-- Aspects -->
+      <li class="nav-item has-treeview">
+        <a href="#" class="nav-link">
+          <i class="nav-icon fas fa-cogs"></i>
+          <p>
+            Aspect Questions
+            <i class="right fas fa-angle-left"></i>
+          </p>
+        </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item">
+            <a href="{{ url_for('aspects.manage_aspects') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>View Aspects</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{{ url_for('aspects.add_aspects') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Add Aspect</p>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Assign Assessor -->
+      <li class="nav-item has-treeview">
+        <a href="#" class="nav-link">
+          <i class="nav-icon fas fa-user-tag"></i>
+          <p>
+            Assign Assessor
+            <i class="right fas fa-angle-left"></i>
+          </p>
+        </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item">
+            <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>View Students</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{{ url_for('student.add_student') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Add Student</p>
+            </a>
+          </li>
+        </ul>
+      </li>
 
 
 
@@ -234,13 +261,13 @@
       </a>
       <ul class="nav nav-treeview">
         <li class="nav-item">
-          <a href="{{ url_for('moderate.manage_students') }}" class="nav-link">
+          <a href="{{ url_for('modulate.manage_students') }}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
             <p>View Students</p>
           </a>
         </li>
         <li class="nav-item">
-          <a href="{{ url_for('moderate.check_student') }}" class="nav-link">
+          <a href="{{ url_for('modulate.check_student') }}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
             <p>Assess A Student</p>
           </a>
@@ -251,6 +278,18 @@
             <i class="far fa-circle nav-icon"></i>
             <p>Results upload</p>
           </a>
+          
+
+          <li class="nav-item">
+            <a href="{{ url_for('assessment.modulate_assessment_report') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>View Report</p>
+            </a>
+          </li>
+
+
+
+
 
 
         </li>
@@ -259,10 +298,30 @@
 
 
 
-
-
-
-
+          <!-- Assign Assessor -->
+          <li class="nav-item has-treeview">
+            <a href="#" class="nav-link">
+              <i class="nav-icon fas fa-user-tag"></i>
+              <p>
+                Assign Assessor
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>View Students</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('student.add_student') }}" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Add Student</p>
+                </a>
+              </li>
+            </ul>
+          </li>
 
 
 
@@ -324,31 +383,6 @@
     </li>
 
 
-
-    <!-- Assign Assessor -->
-    <li class="nav-item has-treeview">
-      <a href="#" class="nav-link">
-        <i class="nav-icon fas fa-user-tag"></i>
-        <p>
-          Assign Assessor
-          <i class="right fas fa-angle-left"></i>
-        </p>
-      </a>
-      <ul class="nav nav-treeview">
-        <li class="nav-item">
-          <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>View Students</p>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="{{ url_for('student.add_student') }}" class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Add Student</p>
-          </a>
-        </li>
-      </ul>
-    </li>
 
   </ul>
 </nav>

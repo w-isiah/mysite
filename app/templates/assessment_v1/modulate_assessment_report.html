@@ -44,7 +44,7 @@
     </div>
 
     <!-- Filter Form (All in one line) -->
-    <form method="POST" action="{{ url_for('assessment.assessment_report') }}" class="form-inline mb-4" onsubmit="return validateForm()">
+    <form method="POST"  action="{{ url_for('assessment.modulate_assessment_report') }}" class="form-inline mb-4" onsubmit="return validateForm()">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="form-group mr-2">
         <label for="programme" class="mr-2">Programme:</label>

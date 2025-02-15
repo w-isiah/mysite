@@ -337,6 +337,22 @@ def assess_v1(student_id):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 from flask import flash, redirect, url_for
 
 @assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
@@ -482,3 +498,184 @@ def assessment_report():
         term_id=term_id,
         reg_no=reg_no
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@assessment_bp.route('/modulate_assessment_report', methods=['GET', 'POST'])
+def modulate_assessment_report():
+    try:
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Fetch Programmes and Terms for filters
+        cursor.execute("SELECT id, programme_name FROM programmes")
+        programmes = cursor.fetchall()
+
+        cursor.execute("SELECT id, term FROM terms ORDER BY term")
+        terms = cursor.fetchall()
+
+        # Initialize variables
+        pivot_data = []  # Initialize an empty list for pivoted data
+        assessors = []   # List of assessors
+        programme_id = None
+        term_id = None
+        reg_no = None
+
+        if request.method == 'POST':
+            # Get filter values from the form
+            programme_id = request.form.get('programme_id')
+            term_id = request.form.get('term_id')
+            reg_no = request.form.get('reg_no')
+
+            # SQL query to fetch assessment data from 'marks' table, excluding 'scores' table
+            query = """
+                SELECT
+                    si.id AS student_id,
+                    si.reg_no,
+                    si.student_teacher AS student_name,
+                    si.subject,
+                    t.term,
+                    u.username AS assessor,
+                    m.marks AS total_marks,
+                    CASE
+                        WHEN m.marks IS NULL THEN 'Not Assessed'
+                        ELSE 'Assessed'
+                    END AS status
+                FROM
+                    student_info si
+                LEFT JOIN
+                    mudulate_marks m ON si.id = m.student_id
+                LEFT JOIN
+                    users u ON m.assessor_id = u.id
+                LEFT JOIN
+                    terms t ON si.term_id = t.id
+                WHERE 1=1
+            """
+
+            # Add filters dynamically
+            filters = []
+            if programme_id:    
+                query += " AND si.programme_id = %s"
+                filters.append(programme_id)
+            if term_id:
+                query += " AND si.term_id = %s"
+                filters.append(term_id)
+            if reg_no:
+                query += " AND si.reg_no LIKE %s"
+                filters.append(f"%{reg_no}%")
+
+            # Finalize query with grouping by student and term
+            query += """
+                ORDER BY si.reg_no
+            """
+
+            # Execute query
+            cursor.execute(query, tuple(filters))
+            data = cursor.fetchall()
+
+            if data:
+                # Data is not empty, proceed with pivoting
+                df = pd.DataFrame(data)
+
+                # Extract unique assessors
+                assessors = df['assessor'].dropna().unique().tolist()
+
+                # Pivot data: assessors as columns
+                pivot_table = df.pivot_table(
+                    index=["reg_no", "student_name", "subject", "term", "status"],
+                    columns="assessor",
+                    values="total_marks",
+                    aggfunc="max",
+                    fill_value=0
+                ).reset_index()
+
+                # Add average score
+                score_columns = [
+                    col for col in pivot_table.columns
+                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'status']
+                ]
+                pivot_table['average_marks'] = pivot_table[score_columns].replace(0, pd.NA).mean(axis=1)
+
+                # Convert pivot table to dictionary for front-end
+                pivot_data = pivot_table.to_dict(orient="records")
+
+                # Handle export to Excel
+                if 'export_excel' in request.form:
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                        pivot_table.to_excel(writer, index=False, sheet_name="Assessment Data")
+                    output.seek(0)
+                    return send_file(
+                        output,
+                        as_attachment=True,
+                        download_name="assessment_data.xlsx",
+                        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                
+                # Flash success message after successful data fetching
+                flash('Assessment data fetched successfully!', 'success')
+
+            else:
+                # Flash message if no data is found
+                flash('No data found for the given filters.', 'warning')
+
+    except Exception as e:
+        logging.error(f"Error occurred: {e}")
+        flash(f"An error occurred: {str(e)}", 'danger')
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    # Render the template with flash messages
+    return render_template(
+        'assessment_v1/modulate_assessment_report.html',
+        role=session.get('role'),
+        username=session.get('username'),
+        programmes=programmes,
+        terms=terms,
+        data=pivot_data,
+        assessors=assessors,
+        programme_id=programme_id,
+        term_id=term_id,
+        reg_no=reg_no
+    )
+
+
+
+
+

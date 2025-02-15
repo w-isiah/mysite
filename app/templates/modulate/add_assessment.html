@@ -87,7 +87,7 @@
                 </center>
 
                 <!-- Start of the Form -->
-                <form action="{{ url_for('moderate.save_scores') }}" method="POST" class="form-horizontal">
+                <form action="{{ url_for('modulate.save_scores') }}" method="POST" class="form-horizontal">
                   <!-- CSRF Token for security -->
                   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                   
@@ -114,7 +114,7 @@
                  </div>
 
                  <!-- Assessment Type (Hidden) -->
-                 <input type="text" id="assessment_type" name="assessment_type" hidden value="manual" class="form-control" />
+                 <input type="text" id="assessment_type" name="assessment_type" hidden value="modulate" class="form-control" />
 
                  <!-- Submit Button -->
                  <div class="form-actions text-center mt-4">
