@@ -125,6 +125,12 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+
+
+from PIL import Image
+import io
+
 @users_bp.route('/add_user', methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
@@ -145,12 +151,29 @@ def add_user():
                 filename = secure_filename(image_file.filename)
                 profile_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-                # Make sure the upload folder exists, create it if not
-                if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                    os.makedirs(app.config['UPLOAD_FOLDER'])
+                # Open the image using Pillow
+                try:
+                    img = Image.open(image_file)
 
-                image_file.save(profile_image_path)
-                profile_image = os.path.join(UPLOAD_FOLDER, filename)  # Save the relative path in the DB
+                    # Check if the image exceeds the max width/height requirement
+                    max_width = 500
+                    max_height = 500
+                    width, height = img.size
+                    
+                    # Resize the image only if it exceeds the size limits
+                    if width > max_width or height > max_height:
+                        img.thumbnail((max_width, max_height))
+                        img.save(profile_image_path, optimize=True, quality=85)
+                    else:
+                        # Save the image without resizing if it meets the requirements
+                        img.save(profile_image_path)
+
+                    # Save the relative path in the DB
+                    profile_image = os.path.join(UPLOAD_FOLDER, filename)
+
+                except Exception as e:
+                    flash(f"Error processing image: {e}", 'danger')
+                    return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))
 
         # Password hashing for security
         hashed_password = generate_password_hash(password)
@@ -166,7 +189,7 @@ def add_user():
 
                 try:
                     # Insert user data, including first name, last name, other name, and profile image
-                    cursor.execute('''
+                    cursor.execute(''' 
                         INSERT INTO users (username, password, role, first_name, last_name, other_name, profile_image)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ''', (username, hashed_password, role, first_name, last_name, other_name, profile_image))
@@ -182,6 +205,7 @@ def add_user():
         return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))
     elif session['role'] == 'Head of Department':
         return render_template('accounts/moderator/add_user.html', role=session.get('role'), username=session.get('username'))
+
 
 
 
@@ -284,6 +308,18 @@ def delete_user(id):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+# Route for editing user profile information
 @users_bp.route('/edit_user_profile/<int:id>', methods=['GET', 'POST'])
 def edit_user_profile(id):
     # Get DB connection using context manager
@@ -311,10 +347,28 @@ def edit_user_profile(id):
                     filename = secure_filename(profile_image.filename)
                     # Define the path where the file will be saved
                     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    # Save the file to the server
-                    profile_image.save(file_path)
-                    # Use the filename in the database
-                    profile_image = filename
+
+                    # Open the image using Pillow
+                    try:
+                        img = Image.open(profile_image)
+
+                        # Check if the image exceeds the max width/height requirement
+                        max_width = 500
+                        max_height = 500
+                        width, height = img.size
+
+                        # Resize the image only if it exceeds the size limits
+                        if width > max_width or height > max_height:
+                            img.thumbnail((max_width, max_height))
+                            img.save(file_path, optimize=True, quality=85)  # Save the optimized image
+                        else:
+                            img.save(file_path)  # Save the image without resizing
+
+                        # Use the filename in the database
+                        profile_image = filename
+                    except Exception as e:
+                        flash(f"Error processing image: {e}", 'danger')
+                        return render_template('accounts/edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
                 else:
                     # Keep the current profile image if no new image is uploaded
                     cursor.execute('SELECT profile_image FROM users WHERE id = %s', (id,))
@@ -345,5 +399,3 @@ def edit_user_profile(id):
         return render_template('accounts/h_edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
     else:
         return render_template('accounts/a_edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
-
-

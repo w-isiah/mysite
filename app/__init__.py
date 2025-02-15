@@ -23,6 +23,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 # Import blueprints
+from app.results_upload.results_upload import results_upload_bp
 from app.auth.auth import users_bp
 from app.main.main import main_bp
 from app.students.students  import student_bp
@@ -39,6 +40,8 @@ from app.ratings.ratings import ratings_bp
 from app.assign_assessor.assign_assessor import assign_assessor_bp
 # Register blueprints
 
+
+app.register_blueprint(results_upload_bp,url_prefix='/results_upload')
 app.register_blueprint(assign_assessor_bp,url_prefix='/assign_assessor')
 app.register_blueprint(ratings_bp,url_prefix='/ratings')
 app.register_blueprint(moderate_bp,url_prefix='/moderate')

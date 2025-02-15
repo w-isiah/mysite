@@ -37,7 +37,7 @@
     <!-- Sidebar Menu -->
     <nav class="mt-2">
       <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-        
+
         <!-- Dashboard -->
         <li class="nav-item has-treeview {% if 'index' in segment %} menu-open {% endif %}">
           <a href="#" class="nav-link {% if 'index' in segment %} active {% endif %}">
@@ -165,148 +165,192 @@
         </li>
 
 
-         <!-- Moderate -->
+        <!-- Moderate -->
         <li class="nav-item has-treeview">
           <a href="#" class="nav-link">
            <i class="nav-icon fas fa-pencil-alt"></i>
-            <p>
-              Manual Assessment
-              <i class="right fas fa-angle-left"></i>
-            </p>
+           <p>
+            Manual Assessment
+            <i class="right fas fa-angle-left"></i>
+          </p>
+        </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item">
+            <a href="{{ url_for('moderate.manage_students') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>View Students</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{{ url_for('moderate.check_student') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Assess A Student</p>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+
+
+
+    <!-- Aspects -->
+    <li class="nav-item has-treeview">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-cogs"></i>
+        <p>
+          Aspect Questions
+          <i class="right fas fa-angle-left"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{{ url_for('aspects.manage_aspects') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>View Aspects</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('moderate.manage_students') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Students</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('moderate.check_student') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Assess A Student</p>
-              </a>
-            </li>
-          </ul>
         </li>
-
-
-
-        <!-- Aspects -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-cogs"></i>
-            <p>
-              Aspects
-              <i class="right fas fa-angle-left"></i>
-            </p>
+        <li class="nav-item">
+          <a href="{{ url_for('aspects.add_aspects') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Add Aspect</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('aspects.manage_aspects') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Aspects</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('aspects.add_aspects') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Add Aspect</p>
-              </a>
-            </li>
-          </ul>
         </li>
-
-      
-
-
-
-
-<li class="nav-header">USER ACCOUNTS</li>
-        <!-- User Accounts -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-user-cog"></i>
-            <p>
-              User Accounts
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('auth.manage_users') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Users</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('auth.add_user') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Add User</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Schools -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-school"></i>
-            <p>
-              Schools
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('schools.manage_schools') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Schools</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('schools.add_schools') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Add Schools</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('school_category.manage_category') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>School Category</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-       
-
-        <!-- Assign Assessor -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-user-tag"></i>
-            <p>
-              Assign Assessor
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Students</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('student.add_student') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Add Student</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-
       </ul>
-    </nav>
-  </div>
+    </li>
+
+
+
+
+
+      <li class="nav-header">MODULATE</li>
+      <!-- Moderate -->
+      <li class="nav-item has-treeview">
+        <a href="#" class="nav-link">
+         <i class="nav-icon fas fa-pencil-alt"></i>
+         <p>
+          Assessment
+          <i class="right fas fa-angle-left"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{{ url_for('moderate.manage_students') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>View Students</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('moderate.check_student') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Assess A Student</p>
+          </a>
+
+
+
+          <a href="{{ url_for('results_upload.results_upload') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Results upload</p>
+          </a>
+
+
+        </li>
+      </ul>
+    </li>
+
+
+
+
+
+
+
+
+
+
+    <li class="nav-header">USER ACCOUNTS</li>
+    <!-- User Accounts -->
+    <li class="nav-item has-treeview">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-user-cog"></i>
+        <p>
+          User Accounts
+          <i class="right fas fa-angle-left"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{{ url_for('auth.manage_users') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>View Users</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('auth.add_user') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Add User</p>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Schools -->
+    <li class="nav-item has-treeview">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-school"></i>
+        <p>
+          Schools
+          <i class="right fas fa-angle-left"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{{ url_for('schools.manage_schools') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>View Schools</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('schools.add_schools') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Add Schools</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('school_category.manage_category') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>School Category</p>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+
+
+    <!-- Assign Assessor -->
+    <li class="nav-item has-treeview">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-user-tag"></i>
+        <p>
+          Assign Assessor
+          <i class="right fas fa-angle-left"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>View Students</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('student.add_student') }}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Add Student</p>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+  </ul>
+</nav>
+</div>
 </aside>
