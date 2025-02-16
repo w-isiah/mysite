@@ -236,9 +236,10 @@ def delete_user(id):
 
 @users_bp.route('/edit_user_profile/<int:id>', methods=['GET', 'POST'])
 def edit_user_profile(id):
-    # Similar to 'edit_user' but excludes 'role'
     with get_db_connection() as connection:
         with connection.cursor(dictionary=True) as cursor:
+            
+            # POST request - Handle profile update
             if request.method == 'POST':
                 # Collect form data
                 username = request.form['username']
@@ -248,17 +249,17 @@ def edit_user_profile(id):
                 password = request.form['password']
                 profile_image = request.files.get('profile_image')
 
-                # Hash password only if a new password is provided
+                # Hash new password if provided; otherwise, keep the current password
                 hashed_password = generate_password_hash(password) if password else get_user_password(cursor, id)
                 
-                # Handle profile image
+                # Process profile image
                 profile_image_path = handle_profile_image(cursor, profile_image, id)
 
                 try:
-                    # Update the user's profile in the database
-                    cursor.execute(''' 
+                    # Update user details in the database
+                    cursor.execute('''
                         UPDATE users 
-                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, profile_image = %s 
+                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, profile_image = %s
                         WHERE id = %s
                     ''', (username, first_name, last_name, other_name, hashed_password, profile_image_path, id))
                     connection.commit()
@@ -266,17 +267,22 @@ def edit_user_profile(id):
                 except mysql.connector.Error as err:
                     flash(f'Error: {err}', 'danger')
 
-                # Redirect to manage users page after update
+                # Redirect after successful update
                 return redirect(url_for('main.index'))
 
-            # Fetch the user data for the GET request to populate the form
+            # GET request - Fetch user data to populate the edit form
             cursor.execute('SELECT * FROM users WHERE id = %s', (id,))
             user = cursor.fetchone()
 
-            # If user does not exist, flash an error and redirect
+            # If user not found, show error and redirect
             if not user:
                 flash('User not found!', 'danger')
                 return redirect(url_for('auth.manage_users'))
 
-    # Render the template with the fetched user data for editing
-    return render_template('accounts/edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
+    # Render the appropriate template based on the role
+    role = session.get('role')
+    username = session.get('username')
+    if role == "Head of Department":
+        return render_template('accounts/h_edit_user_profile.html', role=role, username=username, user=user)
+    elif role == "School Practice Supervisor":
+        return render_template('accounts/a_edit_user_profile.html', role=role, username=username, user=user)
