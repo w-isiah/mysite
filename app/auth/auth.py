@@ -1,33 +1,28 @@
 from datetime import timedelta, datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
-from app.db import get_db_connection  # Assuming you have a custom db module to manage DB connections
 from werkzeug.security import generate_password_hash, check_password_hash
-import mysql.connector
 from werkzeug.utils import secure_filename
+from PIL import Image
+import mysql.connector
 import os
 from app import app
+from app.db import get_db_connection
 
-# Initialize the blueprint
+# Initialize the Blueprint
 users_bp = Blueprint('auth', __name__)
 
-# Ensure the Flask app secret key is set to manage sessions
+# Configuration Constants
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER')  # Ensure this is defined in your app config
+
+# Utility Function to Check File Extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Ensure Flask app secret key is set (for session management)
 # app.secret_key = 'your_secret_key'
 
-# Set session lifetime to 30 minutes (can be configured based on needs)
-''''
-@users_bp.before_app_request
-def check_session_timeout():
-    if 'loggedin' in session:
-        last_activity = session.get('last_activity', datetime.utcnow())
-        timeout_duration = current_app.config['PERMANENT_SESSION_LIFETIME']
-        if (datetime.utcnow() - last_activity).total_seconds() > timeout_duration.total_seconds():
-            flash('Your session has expired due to inactivity. Please log in again.', 'warning')
-            session.clear()  # Clear session data
-            return redirect(url_for('auth.login'))  # Redirect to the login page
-
-        # Update the session's last activity time
-        session['last_activity'] = datetime.utcnow()'''
-
+# Routes for Authentication (Login, Logout, Session Timeout)
 
 @users_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -41,23 +36,21 @@ def login():
                 cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
                 user = cursor.fetchone()
 
-                if user:
-                    if check_password_hash(user['password'], password):
-                        session['loggedin'] = True
-                        session['id'] = user['id']
-                        session['username'] = user['username']
-                        session['first_name'] = user['first_name']
-                        session['last_name'] = user['last_name']
-                        session['profile_image'] = user['profile_image']
-                        session['role'] = user['role']
-                        session.permanent = True  # Make session permanent
-                        session['last_activity'] = datetime.utcnow()  # Set last activity time
-                        flash('Login successful!', 'success')
-                        return redirect(url_for('main.index'))  # Redirect to the main page
-                    else:
-                        flash('Invalid password.', 'danger')
-                else:
-                    flash('Invalid username.', 'danger')
+                if user and check_password_hash(user['password'], password):
+                    session.update({
+                        'loggedin': True,
+                        'id': user['id'],
+                        'username': user['username'],
+                        'first_name': user['first_name'],
+                        'last_name': user['last_name'],
+                        'profile_image': user['profile_image'],
+                        'role': user['role'],
+                        'last_activity': datetime.utcnow()
+                    })
+                    session.permanent = True  # Make session permanent
+                    flash('Login successful!', 'success')
+                    return redirect(url_for('main.index'))  # Redirect to main page
+                flash('Invalid username or password.', 'danger')
 
     return render_template('accounts/login.html')
 
@@ -66,75 +59,47 @@ def login():
 def logout():
     session.clear()  # Clear session data
     flash('You have logged out successfully.', 'success')
-    return redirect(url_for('auth.login'))  # Redirect to login
+    return redirect(url_for('auth.login'))  # Redirect to login page
 
+# User Management Routes (Admin/Head of Department)
 
 @users_bp.route('/manage_users')
 def manage_users():
-   
     try:
-        # Get DB connection using context manager
         with get_db_connection() as connection:
             with connection.cursor(dictionary=True) as cursor:
-                if session['role']=='admin':
+                if session['role'] == 'admin':
                     cursor.execute("SELECT * FROM users WHERE role != 'admin'")
-                    users = cursor.fetchall()
-                elif session['role']=='Head of Department':
-                    cursor.execute("SELECT * FROM users WHERE role != 'admin' and role !='Head of Department' and role != 'Dean'")
-                    users = cursor.fetchall()
+                elif session['role'] == 'Head of Department':
+                    cursor.execute("SELECT * FROM users WHERE role NOT IN ('admin', 'Head of Department', 'Dean')")
+                users = cursor.fetchall()
 
-
-                # Get the count of users that are not admins
                 num = len(users)
-
     except Exception as e:
-        flash(f"An error occurred while fetching data: {str(e)}", 'danger')
+        flash(f"Error fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
-    if session['role']=='admin':
-        return render_template('accounts/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
-    elif session['role']=='Head of Department':
-        return render_template('accounts/moderator/manage_users.html', username=session.get('username'), role=session.get('role'), num=num, users=users)
 
+    template = 'accounts/manage_users.html' if session['role'] == 'admin' else 'accounts/moderator/manage_users.html'
+    return render_template(template, username=session['username'], role=session['role'], num=num, users=users)
 
 @users_bp.route('/api/manage_users_count', methods=['GET'])
 def get_users_count():
     try:
-        # Get DB connection using context manager
         with get_db_connection() as connection:
             with connection.cursor(dictionary=True) as cursor:
                 cursor.execute("SELECT COUNT(*) FROM users WHERE role != 'admin'")
-                num = cursor.fetchone()[0]  # Extract count value from the tuple
-
-        # Return the count as a JSON response
+                num = cursor.fetchone()[0]  # Extract count value from tuple
         return jsonify({"count": num})
 
     except Exception as e:
-        return jsonify({"error": f"An error occurred while fetching data: {str(e)}"}), 500
+        return jsonify({"error": f"Error fetching data: {str(e)}"}), 500
 
 
-
-
-
-
-
-
-# Allowed file extensions for image upload (if you're accepting profile images)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-# Function to check if the uploaded file is a valid image
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-
-
-from PIL import Image
-import io
+# User Profile Management Routes (Add, Edit, Delete, Update)
 
 @users_bp.route('/add_user', methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
-        # Get the form data
         username = request.form['username']
         password = request.form['password']
         role = request.form['role']
@@ -147,38 +112,11 @@ def add_user():
         if 'profile_image' in request.files:
             image_file = request.files['profile_image']
             if image_file and allowed_file(image_file.filename):
-                # Secure the file name and save it to the static folder
-                filename = secure_filename(image_file.filename)
-                profile_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-                # Open the image using Pillow
-                try:
-                    img = Image.open(image_file)
-
-                    # Check if the image exceeds the max width/height requirement
-                    max_width = 500
-                    max_height = 500
-                    width, height = img.size
-                    
-                    # Resize the image only if it exceeds the size limits
-                    if width > max_width or height > max_height:
-                        img.thumbnail((max_width, max_height))
-                        img.save(profile_image_path, optimize=True, quality=85)
-                    else:
-                        # Save the image without resizing if it meets the requirements
-                        img.save(profile_image_path)
-
-                    # Save the relative path in the DB
-                    profile_image = os.path.join(UPLOAD_FOLDER, filename)
-
-                except Exception as e:
-                    flash(f"Error processing image: {e}", 'danger')
-                    return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))
+                profile_image = handle_image_upload(image_file)
 
         # Password hashing for security
         hashed_password = generate_password_hash(password)
 
-        # Get DB connection using context manager
         with get_db_connection() as connection:
             with connection.cursor() as cursor:
                 # Check if the username already exists
@@ -188,7 +126,6 @@ def add_user():
                     return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))
 
                 try:
-                    # Insert user data, including first name, last name, other name, and profile image
                     cursor.execute(''' 
                         INSERT INTO users (username, password, role, first_name, last_name, other_name, profile_image)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -198,33 +135,36 @@ def add_user():
                 except mysql.connector.Error as err:
                     flash(f'Error: {err}', 'danger')
 
-        return redirect(url_for('auth.manage_users'))  # Redirect to user management page
+        return redirect(url_for('main.index'))  # Redirect to user management page
 
-    # Rendering different templates based on role
-    if session['role'] == 'admin':
-        return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))
-    elif session['role'] == 'Head of Department':
-        return render_template('accounts/moderator/add_user.html', role=session.get('role'), username=session.get('username'))
+    template = 'accounts/add_user.html' if session['role'] == 'admin' else 'accounts/moderator/add_user.html'
+    return render_template(template, role=session.get('role'), username=session.get('username'))
 
+# Image upload helper function
+def handle_image_upload(image_file):
+    filename = secure_filename(image_file.filename)
+    profile_image_path = os.path.join(UPLOAD_FOLDER, filename)
 
+    try:
+        img = Image.open(image_file)
+        max_width, max_height = 500, 500
+        width, height = img.size
+        if width > max_width or height > max_height:
+            img.thumbnail((max_width, max_height))
+            img.save(profile_image_path, optimize=True, quality=85)
+        else:
+            img.save(profile_image_path)
+    except Exception as e:
+        flash(f"Error processing image: {e}", 'danger')
+        return None
 
+    return os.path.join(UPLOAD_FOLDER, filename)
 
-
-
-
-
-
-
-
-# Route for editing user information
 @users_bp.route('/edit_user/<int:id>', methods=['GET', 'POST'])
 def edit_user(id):
-    
-    # Get DB connection using context manager
     with get_db_connection() as connection:
         with connection.cursor(dictionary=True) as cursor:
             if request.method == 'POST':
-                # Get form data
                 username = request.form['username']
                 first_name = request.form['first_name']
                 last_name = request.form['last_name']
@@ -233,33 +173,17 @@ def edit_user(id):
                 role = request.form['role']
                 profile_image = request.files.get('profile_image')
 
-                # Handle password update, only if password is provided
-                if password:
-                    hashed_password = generate_password_hash(password)
-                else:
-                    cursor.execute('SELECT password FROM users WHERE id = %s', (id,))
-                    hashed_password = cursor.fetchone()['password']
+                # Handle password update
+                hashed_password = generate_password_hash(password) if password else get_user_password(cursor, id)
 
-                # Handle profile image upload if a new image is provided
-                if profile_image and allowed_file(profile_image.filename):
-                    # Generate a secure filename
-                    filename = secure_filename(profile_image.filename)
-                    # Define the path where the file will be saved
-                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    # Save the file to the server
-                    profile_image.save(file_path)
-                    # Use the filename in the database
-                    profile_image = filename
-                else:
-                    # Keep the current profile image if no new image is uploaded
-                    cursor.execute('SELECT profile_image FROM users WHERE id = %s', (id,))
-                    profile_image = cursor.fetchone()['profile_image']
-                
-                # Update user information in the database
+                # Handle profile image upload
+                profile_image = handle_profile_image(cursor, profile_image, id)
+
+                # Update user info in DB
                 try:
-                    cursor.execute('''
-                        UPDATE users
-                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, role = %s, profile_image = %s
+                    cursor.execute(''' 
+                        UPDATE users 
+                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, role = %s, profile_image = %s 
                         WHERE id = %s
                     ''', (username, first_name, last_name, other_name, hashed_password, role, profile_image, id))
                     connection.commit()
@@ -267,31 +191,31 @@ def edit_user(id):
                 except mysql.connector.Error as err:
                     flash(f'Error: {err}', 'danger')
 
-                # Redirect to the user management page after successful update
-                return redirect(url_for('auth.manage_users'))
+                return redirect(url_for('main.index'))
 
-            # If the request method is GET, retrieve the user's data to pre-fill the form
             cursor.execute('SELECT * FROM users WHERE id = %s', (id,))
             user = cursor.fetchone()
-    
-    # Render the appropriate template based on user role
-    if session['role'] == 'admin':
-        return render_template('accounts/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
-    elif session['role'] == 'Head of Department':
-        return render_template('accounts/moderator/edit_user.html', role=session.get('role'), username=session.get('username'), user=user)
 
+    template = 'accounts/edit_user.html' if session['role'] == 'admin' else 'accounts/moderator/edit_user.html'
+    return render_template(template, role=session.get('role'), username=session.get('username'), user=user)
 
+def get_user_password(cursor, user_id):
+    cursor.execute('SELECT password FROM users WHERE id = %s', (user_id,))
+    return cursor.fetchone()['password']
 
+def handle_profile_image(cursor, profile_image, user_id):
+    if profile_image and allowed_file(profile_image.filename):
+        filename = secure_filename(profile_image.filename)
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        profile_image.save(file_path)
+        return filename
+    else:
+        cursor.execute('SELECT profile_image FROM users WHERE id = %s', (user_id,))
+        return cursor.fetchone()['profile_image']
 
-
-
-
-
-
+# Route for deleting a user
 @users_bp.route('/delete_user/<int:id>', methods=['GET'])
 def delete_user(id):
-
-    # Get DB connection using context manager
     with get_db_connection() as connection:
         with connection.cursor() as cursor:
             try:
@@ -301,7 +225,7 @@ def delete_user(id):
             except mysql.connector.Error as err:
                 flash(f'Error: {err}', 'danger')
 
-    return redirect(url_for('auth.manage_users'))
+    return redirect(url_for('main.index'))
 
 
 
@@ -310,92 +234,49 @@ def delete_user(id):
 
 
 
-
-
-
-
-
-
-
-
-
-# Route for editing user profile information
 @users_bp.route('/edit_user_profile/<int:id>', methods=['GET', 'POST'])
 def edit_user_profile(id):
-    # Get DB connection using context manager
+    # Similar to 'edit_user' but excludes 'role'
     with get_db_connection() as connection:
         with connection.cursor(dictionary=True) as cursor:
             if request.method == 'POST':
-                # Get form data, but exclude role from this part
-                username = request.form.get('username')
-                first_name = request.form.get('first_name')
-                last_name = request.form.get('last_name')
-                other_name = request.form.get('other_name')
-                password = request.form.get('password')
+                # Collect form data
+                username = request.form['username']
+                first_name = request.form['first_name']
+                last_name = request.form['last_name']
+                other_name = request.form['other_name']
+                password = request.form['password']
                 profile_image = request.files.get('profile_image')
 
-                # Handle password update, only if password is provided
-                if password:
-                    hashed_password = generate_password_hash(password)
-                else:
-                    cursor.execute('SELECT password FROM users WHERE id = %s', (id,))
-                    hashed_password = cursor.fetchone()['password']
+                # Hash password only if a new password is provided
+                hashed_password = generate_password_hash(password) if password else get_user_password(cursor, id)
+                
+                # Handle profile image
+                profile_image_path = handle_profile_image(cursor, profile_image, id)
 
-                # Handle profile image upload if a new image is provided
-                if profile_image and allowed_file(profile_image.filename):
-                    # Generate a secure filename
-                    filename = secure_filename(profile_image.filename)
-                    # Define the path where the file will be saved
-                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-                    # Open the image using Pillow
-                    try:
-                        img = Image.open(profile_image)
-
-                        # Check if the image exceeds the max width/height requirement
-                        max_width = 500
-                        max_height = 500
-                        width, height = img.size
-
-                        # Resize the image only if it exceeds the size limits
-                        if width > max_width or height > max_height:
-                            img.thumbnail((max_width, max_height))
-                            img.save(file_path, optimize=True, quality=85)  # Save the optimized image
-                        else:
-                            img.save(file_path)  # Save the image without resizing
-
-                        # Use the filename in the database
-                        profile_image = filename
-                    except Exception as e:
-                        flash(f"Error processing image: {e}", 'danger')
-                        return render_template('accounts/edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
-                else:
-                    # Keep the current profile image if no new image is uploaded
-                    cursor.execute('SELECT profile_image FROM users WHERE id = %s', (id,))
-                    profile_image = cursor.fetchone()['profile_image']
-
-                # Update user information in the database, excluding 'role'
                 try:
+                    # Update the user's profile in the database
                     cursor.execute(''' 
                         UPDATE users 
                         SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, profile_image = %s 
                         WHERE id = %s
-                    ''', (username, first_name, last_name, other_name, hashed_password, profile_image, id))
+                    ''', (username, first_name, last_name, other_name, hashed_password, profile_image_path, id))
                     connection.commit()
                     flash('User updated successfully!', 'success')
                 except mysql.connector.Error as err:
                     flash(f'Error: {err}', 'danger')
 
-                # Redirect to the user management page after successful update
-                return redirect(url_for('auth.manage_users'))
+                # Redirect to manage users page after update
+                return redirect(url_for('main.index'))
 
-            # If the request method is GET, retrieve the user's data to pre-fill the form
+            # Fetch the user data for the GET request to populate the form
             cursor.execute('SELECT * FROM users WHERE id = %s', (id,))
             user = cursor.fetchone()
 
-    if session['role'] == 'admin':
-        return render_template('accounts/edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
-    elif session['role'] == 'Head of Department':
-        return render_template('accounts/h_edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
-    else:
-        return render_template('accounts/a_edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
+            # If user does not exist, flash an error and redirect
+            if not user:
+                flash('User not found!', 'danger')
+                return redirect(url_for('auth.manage_users'))
+
+    # Render the template with the fetched user data for editing
+    return render_template('accounts/edit_user_profile.html', role=session.get('role'), username=session.get('username'), user=user)
