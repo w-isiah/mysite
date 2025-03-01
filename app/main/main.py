@@ -12,6 +12,11 @@ def index():
         connection = get_db_connection()
         cursor = connection.cursor()
 
+
+        cursor.execute("SELECT COUNT(*) FROM users ")
+        data = cursor.fetchone() # Extract count value from the tuple
+        
+
         # Get the count of users who are not admins
         cursor.execute("SELECT COUNT(*) FROM users WHERE role != 'admin'")
         num = cursor.fetchone() # Extract count value from the tuple

@@ -20,29 +20,44 @@
   <link rel="stylesheet" href="/static/assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="/static/assets/plugins/daterangepicker/daterangepicker.css">
   <link rel="stylesheet" href="/static/assets/plugins/summernote/summernote-bs4.min.css">
+
+  <style>
+  .alert-container {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050; /* Ensure flash messages appear above other content */
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .alert {
+    margin-bottom: 10px; /* Add some space between consecutive messages */
+  }
+</style>
+
 {% endblock stylesheets %}
 
 {% block content %}
   <div class="content-wrapper">
     <!-- Flash Messages -->
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-12">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="alert-container">
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    <strong>{{ message }}</strong>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                {% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
+    <div class="row mb-2">
+      <div class="col-12">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alert-container">
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <strong>{{ message }}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          {% endfor %}
         </div>
+        {% endif %}
+        {% endwith %}
       </div>
     </div>
     <!-- End Flash Messages -->

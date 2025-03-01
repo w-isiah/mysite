@@ -349,12 +349,6 @@ def assess_v1(student_id):
 
 
 
-
-
-
-
-from flask import flash, redirect, url_for
-
 @assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
 def assessment_report():
     try:
@@ -366,7 +360,7 @@ def assessment_report():
         cursor.execute("SELECT id, programme_name FROM programmes")
         programmes = cursor.fetchall()
 
-        cursor.execute("SELECT id, term FROM terms ORDER BY term")
+        cursor.execute("SELECT id, term, year FROM terms ORDER BY term")
         terms = cursor.fetchall()
 
         # Initialize variables
@@ -382,7 +376,7 @@ def assessment_report():
             term_id = request.form.get('term_id')
             reg_no = request.form.get('reg_no')
 
-            # SQL query to fetch assessment data from 'marks' table, excluding 'scores' table
+            # SQL query to fetch assessment data from 'marks' table, joining with 'student_info' and 'terms'
             query = """
                 SELECT
                     si.id AS student_id,
@@ -390,6 +384,7 @@ def assessment_report():
                     si.student_teacher AS student_name,
                     si.subject,
                     t.term,
+                    m.term_id AS marks_term_id,  -- Use the term_id from marks table
                     u.username AS assessor,
                     m.marks AS total_marks,
                     CASE
@@ -398,33 +393,30 @@ def assessment_report():
                     END AS status
                 FROM
                     student_info si
-                LEFT JOIN
-                    marks m ON si.id = m.student_id
+                INNER JOIN
+                    marks m ON si.id = m.student_id AND m.term_id = %s  -- Ensure student has marks for the selected term
                 LEFT JOIN
                     users u ON m.assessor_id = u.id
                 LEFT JOIN
-                    terms t ON si.term_id = t.id
+                    terms t ON m.term_id = t.id  -- Ensure correct term from marks table
                 WHERE 1=1
             """
 
-            # Add filters dynamically
-            filters = []
-            if programme_id:    
+            # Add filters dynamically based on user input
+            filters = [term_id]  # The selected term_id is added to filters to be used in the query
+            if programme_id:
                 query += " AND si.programme_id = %s"
                 filters.append(programme_id)
-            if term_id:
-                query += " AND si.term_id = %s"
-                filters.append(term_id)
             if reg_no:
                 query += " AND si.reg_no LIKE %s"
                 filters.append(f"%{reg_no}%")
 
-            # Finalize query with grouping by student and term
+            # Finalize query with ordering by student registration number
             query += """
                 ORDER BY si.reg_no
             """
 
-            # Execute query
+            # Execute the query with the appropriate filters
             cursor.execute(query, tuple(filters))
             data = cursor.fetchall()
 
@@ -437,36 +429,23 @@ def assessment_report():
 
                 # Pivot data: assessors as columns
                 pivot_table = df.pivot_table(
-                    index=["reg_no", "student_name", "subject", "term", "status"],
+                    index=["reg_no", "student_name", "subject", "term", "status", "marks_term_id"],  # Correctly using marks_term_id
                     columns="assessor",
                     values="total_marks",
                     aggfunc="max",
                     fill_value=0
                 ).reset_index()
 
-                # Add average score
+                # Add average score for each student
                 score_columns = [
                     col for col in pivot_table.columns
-                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'status']
+                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'status', 'marks_term_id']
                 ]
                 pivot_table['average_marks'] = pivot_table[score_columns].replace(0, pd.NA).mean(axis=1)
 
                 # Convert pivot table to dictionary for front-end
                 pivot_data = pivot_table.to_dict(orient="records")
 
-                # Handle export to Excel
-                if 'export_excel' in request.form:
-                    output = io.BytesIO()
-                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                        pivot_table.to_excel(writer, index=False, sheet_name="Assessment Data")
-                    output.seek(0)
-                    return send_file(
-                        output,
-                        as_attachment=True,
-                        download_name="assessment_data.xlsx",
-                        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                
                 # Flash success message after successful data fetching
                 flash('Assessment data fetched successfully!', 'success')
 
@@ -519,18 +498,6 @@ def assessment_report():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 @assessment_bp.route('/modulate_assessment_report', methods=['GET', 'POST'])
 def modulate_assessment_report():
     try:
@@ -542,7 +509,7 @@ def modulate_assessment_report():
         cursor.execute("SELECT id, programme_name FROM programmes")
         programmes = cursor.fetchall()
 
-        cursor.execute("SELECT id, term FROM terms ORDER BY term")
+        cursor.execute("SELECT id, term, year FROM terms ORDER BY term")
         terms = cursor.fetchall()
 
         # Initialize variables
@@ -558,7 +525,7 @@ def modulate_assessment_report():
             term_id = request.form.get('term_id')
             reg_no = request.form.get('reg_no')
 
-            # SQL query to fetch assessment data from 'marks' table, excluding 'scores' table
+            # SQL query to fetch assessment data from 'marks' table, joining with 'student_info' and 'terms'
             query = """
                 SELECT
                     si.id AS student_id,
@@ -566,6 +533,7 @@ def modulate_assessment_report():
                     si.student_teacher AS student_name,
                     si.subject,
                     t.term,
+                    m.term_id AS marks_term_id,  -- Use the term_id from marks table
                     u.username AS assessor,
                     m.marks AS total_marks,
                     CASE
@@ -574,33 +542,30 @@ def modulate_assessment_report():
                     END AS status
                 FROM
                     student_info si
-                LEFT JOIN
-                    mudulate_marks m ON si.id = m.student_id
+                INNER JOIN
+                   mudulate_marks m ON si.id = m.student_id AND m.term_id = %s  -- Ensure student has marks for the selected term
                 LEFT JOIN
                     users u ON m.assessor_id = u.id
                 LEFT JOIN
-                    terms t ON si.term_id = t.id
+                    terms t ON m.term_id = t.id  -- Ensure correct term from marks table
                 WHERE 1=1
             """
 
-            # Add filters dynamically
-            filters = []
-            if programme_id:    
+            # Add filters dynamically based on user input
+            filters = [term_id]  # The selected term_id is added to filters to be used in the query
+            if programme_id:
                 query += " AND si.programme_id = %s"
                 filters.append(programme_id)
-            if term_id:
-                query += " AND si.term_id = %s"
-                filters.append(term_id)
             if reg_no:
                 query += " AND si.reg_no LIKE %s"
                 filters.append(f"%{reg_no}%")
 
-            # Finalize query with grouping by student and term
+            # Finalize query with ordering by student registration number
             query += """
                 ORDER BY si.reg_no
             """
 
-            # Execute query
+            # Execute the query with the appropriate filters
             cursor.execute(query, tuple(filters))
             data = cursor.fetchall()
 
@@ -613,36 +578,23 @@ def modulate_assessment_report():
 
                 # Pivot data: assessors as columns
                 pivot_table = df.pivot_table(
-                    index=["reg_no", "student_name", "subject", "term", "status"],
+                    index=["reg_no", "student_name", "subject", "term", "status", "marks_term_id"],  # Correctly using marks_term_id
                     columns="assessor",
                     values="total_marks",
                     aggfunc="max",
                     fill_value=0
                 ).reset_index()
 
-                # Add average score
+                # Add average score for each student
                 score_columns = [
                     col for col in pivot_table.columns
-                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'status']
+                    if col not in ['reg_no', 'student_name', 'subject', 'term', 'status', 'marks_term_id']
                 ]
                 pivot_table['average_marks'] = pivot_table[score_columns].replace(0, pd.NA).mean(axis=1)
 
                 # Convert pivot table to dictionary for front-end
                 pivot_data = pivot_table.to_dict(orient="records")
 
-                # Handle export to Excel
-                if 'export_excel' in request.form:
-                    output = io.BytesIO()
-                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                        pivot_table.to_excel(writer, index=False, sheet_name="Assessment Data")
-                    output.seek(0)
-                    return send_file(
-                        output,
-                        as_attachment=True,
-                        download_name="assessment_data.xlsx",
-                        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                
                 # Flash success message after successful data fetching
                 flash('Assessment data fetched successfully!', 'success')
 
@@ -674,8 +626,5 @@ def modulate_assessment_report():
         term_id=term_id,
         reg_no=reg_no
     )
-
-
-
 
 
