@@ -7,6 +7,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 from werkzeug.utils import secure_filename
 from io import BytesIO
 from app import app
+import mysql.connector  # Import mysql.connector at the top of your file
+from mysql.connector import Error  # Import the Error class from mysql.connector
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 # Initialize blueprint
 student_bp = Blueprint('student', __name__)
@@ -37,21 +39,24 @@ def manage_student():
 
         # Base query for student information
         query = """
-                SELECT 
-                    si.id AS student_id,
-                    si.student_teacher,  
-                    si.reg_no, 
-                    si.subject,
-                    si.class_name, 
-                    si.topic, 
-                    si.subtopic, 
-                    si.teaching_time,
-                    p.programme_name, 
-                    p.description AS programme_description,
-                    t.term
-                FROM student_info si
-                LEFT JOIN programmes p ON si.programme_id = p.id
-               LEFT JOIN terms t ON si.term_id = t.id
+                            SELECT 
+                si.id AS student_id,
+                si.student_teacher,  
+                si.reg_no, 
+                si.subject,
+                si.class_name, 
+                si.topic, 
+                si.subtopic, 
+                si.teaching_time,
+                p.programme_name, 
+                p.description AS programme_description,
+                t.term,
+                s.name AS school_name  -- Only select the school name
+            FROM student_info si
+            LEFT JOIN programmes p ON si.programme_id = p.id
+            LEFT JOIN terms t ON si.term_id = t.id
+            LEFT JOIN schools s ON si.school_id = s.id  -- Join to the schools table
+
             """
 
         params = []
@@ -76,14 +81,14 @@ def manage_student():
                 query += " WHERE " + " AND ".join(conditions)
 
             # Debug: Print the query and parameters to ensure correctness
-            print("Executing Query:", query)
-            print("With Parameters:", params)
+            #print("Executing Query:", query)
+            #print("With Parameters:", params)
 
             cursor.execute(query, params)
             student_info = cursor.fetchall()
 
             # Debug: Check the fetched data
-            print("Fetched Student Info:", student_info)
+            #print("Fetched Student Info:", student_info)
 
         else:
             student_info = []
@@ -92,7 +97,7 @@ def manage_student():
         conn.close()
 
         # Ensure that student_info is being passed correctly to the template
-        print("Student Info for Rendering:", student_info)
+        #print("Student Info for Rendering:", student_info)
 
         # Selecting the correct template based on user role
         template = 'student/manage_student.html' if session['role'] == "Head of Department" else 'student/assessor_manage_student.html'
@@ -103,7 +108,10 @@ def manage_student():
         # Log the error for debugging and provide feedback to the user
         print(f"Error occurred: {str(e)}")  # Debug: Log error
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
-        return redirect(url_for('student.manage_students'))
+        return redirect(url_for('main.index'))
+
+
+
 
 
 
@@ -113,153 +121,162 @@ def manage_student():
 
 @student_bp.route('/add_student', methods=['GET', 'POST'])
 def add_student():
-    # Connect to the database
+    # Establish a database connection
     connection = get_db_connection()
     
     if not connection:
         flash('Failed to connect to the database.', 'danger')
-        return render_template('add_student.html')
+        return render_template('student/add_student.html')
 
-    # Fetch programs and terms for the dropdown
     cursor = connection.cursor(dictionary=True)
+
+    # Fetch dropdown data for programmes, terms, and schools
     cursor.execute('SELECT id, programme_name FROM programmes')
     programmes = cursor.fetchall()
     
     cursor.execute('SELECT id, term FROM terms')
     terms = cursor.fetchall()
-    
+
+    cursor.execute('SELECT id, name FROM schools')
+    schools = cursor.fetchall()
+
     if request.method == 'POST':
-        # Get form data
+        # Retrieve form data
         student_teacher = request.form['student_teacher']
         programme_id = request.form['programme_id']
         reg_no = request.form['reg_no']
         term_id = request.form['term_id']
+        school_id = request.form['school_id']
         subject = request.form['subject']
         class_name = request.form['class']
         teaching_time = request.form['teaching_time']
         topic = request.form['topic']
         subtopic = request.form['subtopic']
 
-        # Insert data into the student_info table
-        cursor = connection.cursor()
-        query = """
-            INSERT INTO student_info (
-                student_teacher, programme_id, reg_no, term_id, subject, class_name, teaching_time, topic, subtopic
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        values = (student_teacher, programme_id, reg_no, term_id, subject, class_name, teaching_time, topic, subtopic)
-
         try:
+            # Check if the registration number already exists
+            cursor.execute("SELECT COUNT(*) FROM student_info WHERE reg_no = %s", (reg_no,))
+            result = cursor.fetchone()
+
+            if result['COUNT(*)'] > 0:
+                flash('This registration number already exists. Please use a different one.', 'danger')
+                return render_template('student/add_student.html', schools=schools, programmes=programmes, terms=terms)
+
+            # Insert data into the student_info table
+            query = """
+                INSERT INTO student_info (
+                    student_teacher, programme_id, reg_no, term_id, subject, class_name, teaching_time, topic, subtopic, school_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (student_teacher, programme_id, reg_no, term_id, subject, class_name, teaching_time, topic, subtopic, school_id)
+
             cursor.execute(query, values)
-            connection.commit()
+            connection.commit()  # Commit the transaction
+
             flash('Student Teacher added successfully!', 'success')
-            return redirect(url_for('student/add_student'))  # Redirect after successful submission
-        except Error as e:
-            connection.rollback()
+            return redirect(url_for('student.add_students'))
+
+        except mysql.connector.Error as e:
+            connection.rollback()  # Rollback on error
             flash(f'Error: {e}', 'danger')
-            return render_template('student/add_student.html',username=session['username'], programmes=programmes, terms=terms)
+            return render_template('student/add_student.html', schools=schools, programmes=programmes, terms=terms)
 
-    return render_template('student/add_student.html',username=session['username'], programmes=programmes, terms=terms)
+        finally:
+            cursor.close()  # Always close the cursor after the operation
+
+    # Return the page with dropdown data on GET request
+    return render_template('student/add_student.html', schools=schools, programmes=programmes, terms=terms)
 
 
 
-
+ 
+ 
+  
 
 @student_bp.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
 def edit_student(student_id):
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        # Connect to the database
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Fetch student details from the database
         cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
         student = cursor.fetchone()
-        programmes, terms = fetch_programmes_and_terms()
 
+        # Fetch programmes, terms, and schools for dropdown options
+        cursor.execute('SELECT id, programme_name FROM programmes')
+        programmes = cursor.fetchall()
+        
+        cursor.execute('SELECT id, term FROM terms')
+        terms = cursor.fetchall()
+
+        cursor.execute('SELECT id, name FROM schools')
+        schools = cursor.fetchall()
+
+        # If student doesn't exist, flash a message and redirect
         if not student:
             flash("Student not found!", "danger")
             return redirect(url_for('student.manage_student'))
 
         if request.method == 'POST':
-            form_data = {key: request.form[key] for key in ('student_teacher', 'term_id', 'programme_id', 'reg_no',
-                                                            'subject', 'class', 'topic', 'subtopic', 'teaching_time')}
+            # Collect form data, including the school_id
+            form_data = {key: request.form[key] for key in ('student_teacher', 'programme_id', 'reg_no', 'term_id', 
+                                                            'subject', 'class', 'topic', 'subtopic', 'teaching_time', 'school_id')}
+
+            # Check if all required fields are filled
             if not all(form_data.values()):
                 flash("All fields are required!", "danger")
             else:
                 try:
-                    form_data['teaching_time'] = datetime.strptime(form_data['teaching_time'], "%Y-%m-%dT%H:%M")
-                    cursor.execute("""
+                    # Extract the form values explicitly
+                    student_teacher = form_data['student_teacher']
+                    programme_id = form_data['programme_id']
+                    reg_no = form_data['reg_no']
+                    term_id = form_data['term_id']
+                    subject = form_data['subject']
+                    class_name = form_data['class']
+                    topic = form_data['topic']
+                    subtopic = form_data['subtopic']
+                    teaching_time = form_data['teaching_time']
+                    school_id = form_data['school_id']
+
+                    # Update the student information in the database
+                    query = """
                         UPDATE student_info
-                        SET student_teacher = %s, term_id = %s, programme_id = %s, reg_no = %s,
-                            subject = %s, class_name = %s, topic = %s, subtopic = %s, teaching_time = %s
+                        SET student_teacher = %s, programme_id = %s, reg_no = %s, term_id = %s,
+                            subject = %s, class_name = %s, topic = %s, subtopic = %s, teaching_time = %s, school_id = %s
                         WHERE id = %s
-                    """, (*form_data.values(), student_id))
-                    conn.commit()
-                    flash("Student updated successfully!", "success")
-                    return redirect(url_for('student.manage_student'))
-                except ValueError:
-                    flash("Invalid teaching time format!", "danger")
+                    """
+                    # Values must match the placeholders in the SQL query
+                    values = (student_teacher, programme_id, reg_no, term_id, subject, class_name, topic, subtopic, teaching_time, school_id, student_id)
 
-        cursor.close()
-        conn.close()
-        template = 'student/edit_student.html' if session['role'] == "Head of Department" else 'student/assessor_edit_student.html'
-        return render_template(template, username=session['username'], role=session['role'], terms=terms, student=student, programmes=programmes)
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('student.manage_student'))
-
-
-
-
-
-@student_bp.route('/a_edit_student/<int:student_id>', methods=['GET', 'POST'])
-def a_edit_student(student_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Fetch student details
-        cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
-        student = cursor.fetchone()
-        
-        # Fetch other required data (programmes and terms)
-        programmes, terms = fetch_programmes_and_terms()
-
-        if not student:
-            flash("Student not found!", "danger")
-            return redirect(url_for('student.manage_student'))
-
-        if request.method == 'POST':
-            form_data = {key: request.form[key] for key in ('subject', 'class', 'topic', 'subtopic', 'teaching_time')}
-            
-            # Ensure all fields are filled
-            if not all(form_data.values()):
-                flash("All fields are required!", "danger")
-            else:
-                try:
-                    # Convert teaching time to datetime
-                    form_data['teaching_time'] = datetime.strptime(form_data['teaching_time'], "%Y-%m-%dT%H:%M")
-
-                    # Update student details in the database
-                    cursor.execute("""
-                        UPDATE student_info
-                        SET subject = %s, class_name = %s, topic = %s, subtopic = %s, teaching_time = %s
-                        WHERE id = %s
-                    """, (*form_data.values(), student_id))
-                    conn.commit()
+                    cursor.execute(query, values)
+                    connection.commit()
 
                     flash("Student updated successfully!", "success")
-                    return redirect(url_for('student.manage_student'))
+                    return redirect(url_for('student.manage_students'))  # Redirect after successful update
 
-                except ValueError:
-                    flash("Invalid teaching time format!", "danger")
+                except Exception as e:
+                    flash(f"An error occurred: {str(e)}", "danger")
 
         cursor.close()
-        conn.close()
+        connection.close()
 
-        return render_template('student/assessor_edit_student.html', username=session['username'], role=session['role'], terms=terms, student=student, programmes=programmes)
+        # Render the template with student details, programmes, terms, and schools
+        return render_template('student/edit_student.html', username=session['username'], student=student, 
+                               programmes=programmes, terms=terms, schools=schools)
 
     except Exception as e:
         flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('student.manage_student'))
+        return redirect(url_for('main.index'))
+
+
+
+
+
+
+
 
 
 
@@ -373,7 +390,7 @@ def register_student(student_id):
                 )
                 conn.commit()
                 flash("Student's term updated successfully!", "success")
-                return redirect(url_for('student.manage_student'))
+                return redirect(url_for('student.manage_students'))
 
         cursor.close()
         conn.close()
@@ -382,10 +399,10 @@ def register_student(student_id):
 
     except Exception as e:
         flash(f"An error occurred while fetching data: {str(e)}", "danger")
-        return redirect(url_for('student.manage_student'))
+        return redirect(url_for('student.manage_students'))
 
 
-    return redirect(url_for('student.manage_student'))
+    return redirect(url_for('student.manage_students'))
 
 
 

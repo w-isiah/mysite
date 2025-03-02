@@ -18,6 +18,8 @@
 <link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
 <!-- Custom Styles -->
 <link rel="stylesheet" href="/static/assets/css/mine.css">
+<!-- Select2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css">
 {% endblock stylesheets %}
 
 {% block content %}
@@ -81,9 +83,7 @@
                   <i class="fas fa-user-plus"></i> View Students
                 </a>
               </div>
-        
-
-            </div>
+         </div>
           </div>
         </div>
       </div>
@@ -92,100 +92,110 @@
       <div class="row">
         <div class="col-12">
           <div class="card">
-            <div class="card-header">
-            </div>
-                    <!-- Widget Content for the Form -->
-                    <div class="card-body">
-                        <form action="{{ url_for('student.edit_student', student_id=student.id) }}" method="POST" class="form-horizontal">
-                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <div class="card-header"></div>
+            
+            <!-- Widget Content for the Form -->
+            <div class="card-body">
+              <form action="{{ url_for('student.edit_student', student_id=student.id) }}" method="POST" class="form-horizontal">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Student Details Section -->
+                <fieldset>
+                  <legend>Student Teacher Details</legend>
+
+                  <!-- Student Teacher Input -->
+                  <div class="form-group">
+                    <label for="student_teacher">Student Teacher:</label>
+                    <input type="text" id="student_teacher" name="student_teacher" class="form-control" 
+                    value="{{ student.student_teacher }}" required />
+                  </div>
+
+                  <!-- School Selection -->
+                  <div class="form-group">
+                    <label for="school_id">School:</label>
+                    <select name="school_id" id="school_id" class="form-control select2" required>
+                      {% for school in schools %}
+                      <option value="{{ school.id }}" {% if school.id == student.school_id %}selected{% endif %}>
+                        {{ school.name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <!-- Term Selection -->
+                  <div class="form-group">
+                    <label for="term">Term:</label>
+                    <select name="term_id" id="term" class="form-control select2" required>
+                      {% for term in terms %}
+                      <option value="{{ term.id }}" {% if term.id == student.term_id %}selected{% endif %}>
+                        {{ term.term }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <!-- Programme Selection -->
+                  <div class="form-group">
+                    <label for="programme">Programme:</label>
+                    <select name="programme_id" id="programme" class="form-control select2" required>
+                      {% for programme in programmes %}
+                      <option value="{{ programme.id }}" {% if programme.id == student.programme_id %}selected{% endif %}>
+                        {{ programme.programme_name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <!-- Registration Number Input -->
+                  <div class="form-group">
+                    <label for="reg_no">Registration No:</label>
+                    <input type="text" id="reg_no" name="reg_no" class="form-control" value="{{ student.reg_no }}" required />
+                  </div>
+
+                  <!-- Subject Input -->
+                  <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <input type="text" id="subject" name="subject" class="form-control" value="{{ student.subject }}" />
+                  </div>
+
+                  <!-- Class Input -->
+                  <div class="form-group">
+                    <label for="class">Class:</label>
+                    <input type="text" id="class" name="class" class="form-control" value="{{ student.class_name }}" />
+                  </div>
+
+                  <!-- Teaching Time Input -->
+                  <div class="form-group">
+                    <label for="teaching_time">Teaching Time:</label>
+                    <input type="datetime-local" id="teaching_time" name="teaching_time" class="form-control" value="{{ student.teaching_time}}" />
+                  </div>
 
 
-                            <!-- Student Details Section -->
-                            <fieldset>
-                                <legend>Student Teacher Details</legend>
-
-                                <!-- Student Teacher Input -->
-                                <div class="form-group">
-                                    <label for="student_teacher">Student Teacher:</label>
-                                    <input type="text" id="student_teacher" name="student_teacher" class="form-control" 
-                                    value="{{ student.student_teacher }}" required />
-                                </div>
-
-                                
-
-                                <!-- term Selection -->
-                                <div class="form-group">
-                                    <label for="term">Term:</label>
-                                    <select name="term_id" id="term" class="form-control select2" required>
-                                        {% for term in terms %}
-                                        <option value="{{ term.id }}" {% if term.id == student.term_id %}selected{% endif %}>
-                                            {{ term.term }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+          
 
 
 
+                  <!-- Topic Input -->
+                  <div class="form-group">
+                    <label for="topic">Topic:</label>
+                    <input type="text" id="topic" name="topic" class="form-control" value="{{ student.topic }}" />
+                  </div>
 
+                  <!-- Subtopic Input -->
+                  <div class="form-group">
+                    <label for="subtopic">Subtopic:</label>
+                    <input type="text" id="subtopic" name="subtopic" class="form-control" value="{{ student.subtopic }}" />
+                  </div>
 
-                                <!-- Programme Selection -->
-                                <div class="form-group">
-                                    <label for="programme">Programme:</label>
-                                    <select name="programme_id" id="programme" class="form-control select2" required>
-                                        {% for programme in programmes %}
-                                        <option value="{{ programme.id }}" {% if programme.id == student.programme_id %}selected{% endif %}>
-                                            {{ programme.programme_name }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                </fieldset>
 
-                                <!-- Registration Number Input -->
-                                <div class="form-group">
-                                    <label for="reg_no">Registration No:</label>
-                                    <input type="text" id="reg_no" name="reg_no" class="form-control" value="{{ student.reg_no }}" required />
-                                </div>
-
-                                <!-- Subject Input -->
-                                <div class="form-group">
-                                    <label for="subject">Subject:</label>
-                                    <input type="text" id="subject" name="subject" class="form-control" value="{{ student.subject }}" />
-                                </div>
-
-                                <!-- Class Input -->
-                                <div class="form-group">
-                                    <label for="class">Class:</label>
-                                    <input type="text" id="class" name="class" class="form-control" value="{{ student.class_name }}" />
-                                </div>
-
-                                <!-- Teaching Time Input -->
-                                <div class="form-group">
-                                    <label for="teaching_time">Teaching Time:</label>
-                                    <input type="datetime-local" id="teaching_time" name="teaching_time" class="form-control" value="{{ student.teaching_time | replace(' ', 'T') }}" />
-                                </div>
-
-                                <!-- Topic Input -->
-                                <div class="form-group">
-                                    <label for="topic">Topic:</label>
-                                    <input type="text" id="topic" name="topic" class="form-control" value="{{ student.topic }}" />
-                                </div>
-
-                                <!-- Subtopic Input -->
-                                <div class="form-group">
-                                    <label for="subtopic">Subtopic:</label>
-                                    <input type="text" id="subtopic" name="subtopic" class="form-control" value="{{ student.subtopic }}" />
-                                </div>
-
-                            </fieldset>
-
-                            <!-- Form Action Buttons -->
-                            <div class="d-flex justify-content-end">
-                                <button type="submit" id="submitBtn" class="btn btn-success">Update</button>
-                            </div>
-                        </form>
-                    </div>
+                <!-- Form Action Buttons -->
+                <div class="d-flex justify-content-end">
+                  <button type="submit" id="submitBtn" class="btn btn-success">Update</button>
                 </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -211,8 +221,14 @@
 <script src="/static/assets/plugins/bootstrap/js/bootstrap-tooltip.min.js"></script>
 <script src="/static/assets/js/mine.js"></script>
 
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
 <script>
   $(function () {
+    // Initialize Select2 for select elements
+    $('.select2').select2();
+
     $("#example1").DataTable({
       "responsive": true,
       "autoWidth": false,

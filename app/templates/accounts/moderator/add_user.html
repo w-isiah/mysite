@@ -1,8 +1,8 @@
 {% extends "layouts/moderator_base.html" %}
 
-{% block title %} Forms Advanced {% endblock %} 
+{% block title %} Add User - Advanced Form {% endblock %}
 
-{% block body_class %} moderator_sidebar-mini {% endblock body_class %} 
+{% block body_class %} moderator_sidebar-mini {% endblock body_class %}
 
 {% block stylesheets %}
 <!-- Include necessary stylesheets -->
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/static/assets/css/mine.css">
 {% endblock stylesheets %}
 
-{% block content %}    
+{% block content %}
 
 <!-- Content Wrapper -->
 <div class="content-wrapper">
@@ -49,12 +49,12 @@
     <div class="container-fluid">
       <div class="row mb-2">
         <div class="col-sm-6">
-          <h1>Advanced Form</h1>
+          <h1>Add User</h1>
         </div>
         <div class="col-sm-6">
           <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="{{url_for('main.index')}}">Home</a></li>
-            <li class="breadcrumb-item active">Add Users</li>
+            <li class="breadcrumb-item active">Add User</li>
           </ol>
         </div>
       </div>
@@ -79,22 +79,41 @@
         <div class="card-body">
           <div class="row">
             <div class="col-md-6">
-              <form action="{{ url_for('auth.add_user') }}" method="POST">
+              <form action="{{ url_for('auth.add_user') }}" method="POST" enctype="multipart/form-data">
                 <!-- CSRF Token for security -->
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                 <div class="card-body">
                   <!-- User Name Input -->
                   <div class="form-group">
-                    <label for="username">User Name</label>
-                    <input type="text" class="form-control" id="username" placeholder="Enter user name" name="username" required pattern="^[a-zA-Z0-9_]{3,20}$" title="Username must be alphanumeric and 3 to 20 characters long">
+                    <label for="username">Username</label>
+                    <input type="text" class="form-control" id="username" placeholder="Enter username" name="username" required pattern="^[a-zA-Z0-9_]{3,20}$" title="Username must be alphanumeric and 3 to 20 characters long">
                     <small class="form-text text-muted">Username should be 3-20 characters long and contain only letters, numbers, and underscores.</small>
+                  </div>
+
+                  <!-- First Name -->
+                  <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" class="form-control" id="first_name" placeholder="Enter first name" name="first_name" required>
+                  </div>
+
+                  <!-- Last Name -->
+                  <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" class="form-control" id="last_name" placeholder="Enter last name" name="last_name" required>
+                  </div>
+
+                  <!-- Other Name -->
+                  <div class="form-group">
+                    <label for="other_name">Other Name</label>
+                    <input type="text" class="form-control" id="other_name" placeholder="Enter other name" name="other_name">
+                    <small class="form-text text-muted">Optional.</small>
                   </div>
 
                   <!-- Password Input -->
                   <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" class="form-control" id="password" placeholder="Password" name="password" required minlength="8" title="Password must be at least 8 characters long">
+                    <input type="password" class="form-control" id="password" placeholder="Enter password" name="password" required minlength="8" title="Password must be at least 8 characters long">
                     <small class="form-text text-muted">Password must be at least 8 characters long.</small>
                   </div>
 
@@ -110,11 +129,17 @@
                     <label for="role">Role</label>
                     <select class="form-control select2" name="role" id="role" style="width: 100%;" required>
                       <option value="" selected disabled="selected">Select a Role</option>
-                      
                       <option value="School Practice Supervisor">School Practice Supervisor</option>
-                      
                     
+                  
                     </select>
+                  </div>
+
+                  <!-- Profile Image Upload -->
+                  <div class="form-group">
+                    <label for="profile_image">Profile Image</label>
+                    <input type="file" class="form-control-file" id="profile_image" name="profile_image" accept="image/*">
+                    <small class="form-text text-muted">Upload a profile image (optional). Accepted formats: PNG, JPG, JPEG, GIF.</small>
                   </div>
 
                   <!-- Submit Button -->
@@ -151,6 +176,7 @@
 <script>
   $(function () {
     $('.select2').select2();
+
     // Password matching validation
     $('#confirm_password').on('input', function () {
       const password = $('#password').val();

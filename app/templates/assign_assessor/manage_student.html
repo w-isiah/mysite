@@ -12,6 +12,23 @@
 <link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
 <link rel="stylesheet" href="/static/assets/css/mine.css">
 <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+
+<!-- Custom styles for flash messages -->
+<style>
+    .alert-container {
+        position: fixed;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1050; /* Ensure flash messages appear above other content */
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .alert {
+        margin-bottom: 10px; /* Add some space between consecutive messages */
+    }
+</style>
 {% endblock stylesheets %}
 
 {% block content %}
