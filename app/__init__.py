@@ -39,8 +39,13 @@ from app.schools.schools  import schools_bp
 from app.moderate.moderate import moderate_bp
 from app.ratings.ratings import ratings_bp
 from app.assign_assessor.assign_assessor import assign_assessor_bp
+from app.d_f_assign_assessor.d_f_assign_assessor import d_f_assign_assessor_bp
 # Register blueprints
 
+
+
+
+app.register_blueprint(d_f_assign_assessor_bp,url_prefix='/d_f_assign_assessor')
 app.register_blueprint(modulate_bp,url_prefix='/modulate')
 app.register_blueprint(results_upload_bp,url_prefix='/results_upload')
 app.register_blueprint(assign_assessor_bp,url_prefix='/assign_assessor')
