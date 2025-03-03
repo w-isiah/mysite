@@ -310,10 +310,190 @@ def m_manage_student():
 
 
 
+
+
+@d_f_assign_assessor_bp.route('/internal_m_manage_students', methods=['GET', 'POST'])
+def internal_m_manage_student():
+    try:
+        # Database connection and fetching terms and schools
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT id, term FROM terms")
+        terms = cursor.fetchall()  # Fetching only terms now
+
+        # Fetch assessors
+        assessors_query = "SELECT id, a_internal_role, username FROM users WHERE role != 'admin' AND role != 'Head of Department' AND  a_internal_role = 1 "
+        cursor.execute(assessors_query)
+        assessors = cursor.fetchall()
+
+
+        cursor.execute("SELECT id, name FROM schools")
+        schools = cursor.fetchall()
+
+        # Base query without filters
+        query = """
+        SELECT 
+            t.term AS term,
+            IF(d.school_id IS NOT NULL, TRUE, FALSE) AS assigned,  -- If the school_id exists in d_assign_assessor, it's assigned, otherwise not assigned
+            u.username AS assessor_name,  -- Assessor's name (null if no assignment)
+            s.name AS school_name,  -- School name from schools table
+            s.id AS school_id,  -- School id from schools table
+            IF(d.school_id IS NULL, 'Not Assessed', 'Assigned') AS assessment_status  -- 'Not Assessed' if no record in d_assign_assessor, else 'Assigned'
+        FROM schools s
+        LEFT JOIN d_internal_assign_assessor  d ON s.id = d.school_id  -- Left join to include all schools, even those not assigned
+        LEFT JOIN terms t ON d.term_id = t.id  -- Join with terms based on term_id, note some schools may not have a term assigned
+        LEFT JOIN users u ON d.assessor_id = u.id  -- Join with users to get assessor name, null if not assigned
+        """
+        
+        params = []
+        result_list = []
+
+        # Handle dynamic filtering based on POST request
+        if request.method == 'POST':
+            conditions = []
+
+            # Get the form values
+            term = request.form.get('term')
+            school = request.form.get('school')
+
+            # Validation: Ensure both term and school are selected
+            if not term or not school:
+                flash("Please select both a term and a school to filter.", 'danger')
+                return redirect(url_for('d_f_assign_assessor.m_manage_student'))  # Redirect back to the same page with the message
+
+            # Apply filtering based on selected term and school
+            if term:
+                conditions.append("d.term_id = %s")  # Adjusted to d_assign_assessor's term_id
+                params.append(term)
+
+            if school:
+                conditions.append("d.school_id = %s")  # Adjusted to d_assign_assessor's school_id
+                params.append(school)
+
+            # If both conditions are selected, apply them to the query using AND
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)  # Ensure both filters are applied
+
+        # Execute the query with both filters
+        cursor.execute(query, params)
+        result_list = cursor.fetchall()
+
+        # Always close the connection after the query is executed
+        cursor.close()
+        conn.close()
+
+        # Pass the filtered data (or all data if no filters) to the template
+        return render_template('d_f_assign_assessor/m_assessor_manage_student.html', 
+                               username=session['username'], 
+                               role=session['role'],
+                               result_list=result_list,  # Renamed to result_list since student info is removed
+                               terms=terms,
+                               schools=schools,
+                               assessors=assessors)
+
+    except Exception as e:
+        # Log the error and provide feedback to the user
+        print(f"Error occurred: {str(e)}")  # For debugging
+        flash(f"An error occurred while fetching data: {str(e)}", 'danger')
+        return redirect(url_for('main.index'))
+
+
+
+
+
+
+
+
  
 
 
 
+@d_f_assign_assessor_bp.route('/external_m_manage_students', methods=['GET', 'POST'])
+def external_m_manage_student():
+    try:
+        # Database connection and fetching terms and schools
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT id, term FROM terms")
+        terms = cursor.fetchall()  # Fetching only terms now
+
+        # Fetch assessors
+        assessors_query = "SELECT id, a_external_role, username FROM users WHERE role != 'admin' AND role != 'Head of Department' AND  a_external_role = 1 "
+        cursor.execute(assessors_query)
+        assessors = cursor.fetchall()
+
+
+        cursor.execute("SELECT id, name FROM schools")
+        schools = cursor.fetchall()
+
+        # Base query without filters
+        query = """
+        SELECT 
+            t.term AS term,
+            IF(d.school_id IS NOT NULL, TRUE, FALSE) AS assigned,  -- If the school_id exists in d_assign_assessor, it's assigned, otherwise not assigned
+            u.username AS assessor_name,  -- Assessor's name (null if no assignment)
+            s.name AS school_name,  -- School name from schools table
+            s.id AS school_id,  -- School id from schools table
+            IF(d.school_id IS NULL, 'Not Assessed', 'Assigned') AS assessment_status  -- 'Not Assessed' if no record in d_assign_assessor, else 'Assigned'
+        FROM schools s
+        LEFT JOIN d_external_assign_assessor d ON s.id = d.school_id  -- Left join to include all schools, even those not assigned
+        LEFT JOIN terms t ON d.term_id = t.id  -- Join with terms based on term_id, note some schools may not have a term assigned
+        LEFT JOIN users u ON d.assessor_id = u.id  -- Join with users to get assessor name, null if not assigned
+        """
+        
+        params = []
+        result_list = []
+
+        # Handle dynamic filtering based on POST request
+        if request.method == 'POST':
+            conditions = []
+
+            # Get the form values
+            term = request.form.get('term')
+            school = request.form.get('school')
+
+            # Validation: Ensure both term and school are selected
+            if not term or not school:
+                flash("Please select both a term and a school to filter.", 'danger')
+                return redirect(url_for('d_f_assign_assessor.m_manage_student'))  # Redirect back to the same page with the message
+
+            # Apply filtering based on selected term and school
+            if term:
+                conditions.append("d.term_id = %s")  # Adjusted to d_assign_assessor's term_id
+                params.append(term)
+
+            if school:
+                conditions.append("d.school_id = %s")  # Adjusted to d_assign_assessor's school_id
+                params.append(school)
+
+            # If both conditions are selected, apply them to the query using AND
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)  # Ensure both filters are applied
+
+        # Execute the query with both filters
+        cursor.execute(query, params)
+        result_list = cursor.fetchall()
+
+        # Always close the connection after the query is executed
+        cursor.close()
+        conn.close()
+
+        # Pass the filtered data (or all data if no filters) to the template
+        return render_template('d_f_assign_assessor/m_assessor_manage_student.html', 
+                               username=session['username'], 
+                               role=session['role'],
+                               result_list=result_list,  # Renamed to result_list since student info is removed
+                               terms=terms,
+                               schools=schools,
+                               assessors=assessors)
+
+    except Exception as e:
+        # Log the error and provide feedback to the user
+        print(f"Error occurred: {str(e)}")  # For debugging
+        flash(f"An error occurred while fetching data: {str(e)}", 'danger')
+        return redirect(url_for('main.index'))
 
 
 
@@ -386,3 +566,131 @@ def m_assign_assessor():
 
         return redirect(url_for('d_f_assign_assessor.m_manage_student'))
 
+
+
+
+
+
+@d_f_assign_assessor_bp.route('/internal_m_assign_assessor', methods=['GET', 'POST'])
+def internl_m_assign_assessor():
+    if request.method == 'POST':
+        # Get form data
+        assessor_id = request.form.get('assessor')
+        school_ids = request.form.getlist('school_ids')
+        assigned_by = session['id']
+        term_id = request.form.get('term_id')  # Assuming term_id is passed in the form
+        
+        # Validate form data
+        if not assessor_id or not school_ids or not term_id:
+            flash('Please select an assessor, at least one school, and a term.', 'warning')
+            return redirect(url_for('d_f_assign_assessor.m_manage_student'))
+
+        # Establish a connection to the database
+        connection = get_db_connection()
+
+        # Flag to check if any assignment was successful
+        any_assignment_successful = False
+
+        try:
+            with connection.cursor() as cursor:
+                for school_id in school_ids:
+                    # Check if the assessor is already assigned to this school and term
+                    cursor.execute("""
+                        SELECT * FROM d_internal_assign_assessor 
+                        WHERE school_id = %s AND term_id = %s AND assessor_id = %s
+                    """, (school_id, term_id, assessor_id))
+                    existing_assignment = cursor.fetchone()
+
+                    if existing_assignment:
+                        # If the assignment already exists, flash a warning message and skip this school
+                        flash(f'Assessor {assessor_id} is already assigned to school {school_id} for this term.', 'warning')
+                        continue  # Skip this school if the assessor is already assigned
+
+                    # Proceed with assignment if no existing assignment
+                    cursor.execute("""
+                        INSERT INTO d_internal_assign_assessor (assessor_id, assigned_by, term_id, school_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, (assessor_id, assigned_by, term_id, school_id))
+                    any_assignment_successful = True  # Mark that we did an assignment
+
+            # Commit the transaction only if there was at least one successful assignment
+            if any_assignment_successful:
+                connection.commit()
+                flash('Assessors successfully assigned!', 'success')
+            else:
+                # No assignments were successful, so no success message
+                flash('No new assignments were made. Please check the existing assignments.', 'info')
+
+        except mysql.connector.Error as e:
+            # Rollback in case of error
+            connection.rollback()
+            flash(f'Error assigning assessors: {str(e)}', 'danger')
+
+        finally:
+            # Close connection
+            connection.close()
+
+        return redirect(url_for('d_f_assign_assessor.m_manage_student'))
+
+
+
+@d_f_assign_assessor_bp.route('/external_m_assign_assessor', methods=['GET', 'POST'])
+def externl_m_assign_assessor():
+    if request.method == 'POST':
+        # Get form data
+        assessor_id = request.form.get('assessor')
+        school_ids = request.form.getlist('school_ids')
+        assigned_by = session['id']
+        term_id = request.form.get('term_id')  # Assuming term_id is passed in the form
+        
+        # Validate form data
+        if not assessor_id or not school_ids or not term_id:
+            flash('Please select an assessor, at least one school, and a term.', 'warning')
+            return redirect(url_for('d_f_assign_assessor.m_manage_student'))
+
+        # Establish a connection to the database
+        connection = get_db_connection()
+
+        # Flag to check if any assignment was successful
+        any_assignment_successful = False
+
+        try:
+            with connection.cursor() as cursor:
+                for school_id in school_ids:
+                    # Check if the assessor is already assigned to this school and term
+                    cursor.execute("""
+                        SELECT * FROM  d_external_assign_assessor  
+                        WHERE school_id = %s AND term_id = %s AND assessor_id = %s
+                    """, (school_id, term_id, assessor_id))
+                    existing_assignment = cursor.fetchone()
+
+                    if existing_assignment:
+                        # If the assignment already exists, flash a warning message and skip this school
+                        flash(f'Assessor {assessor_id} is already assigned to school {school_id} for this term.', 'warning')
+                        continue  # Skip this school if the assessor is already assigned
+
+                    # Proceed with assignment if no existing assignment
+                    cursor.execute("""
+                        INSERT INTO  d_external_assign_assessor  (assessor_id, assigned_by, term_id, school_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, (assessor_id, assigned_by, term_id, school_id))
+                    any_assignment_successful = True  # Mark that we did an assignment
+
+            # Commit the transaction only if there was at least one successful assignment
+            if any_assignment_successful:
+                connection.commit()
+                flash('Assessors successfully assigned!', 'success')
+            else:
+                # No assignments were successful, so no success message
+                flash('No new assignments were made. Please check the existing assignments.', 'info')
+
+        except mysql.connector.Error as e:
+            # Rollback in case of error
+            connection.rollback()
+            flash(f'Error assigning assessors: {str(e)}', 'danger')
+
+        finally:
+            # Close connection
+            connection.close()
+
+        return redirect(url_for('d_f_assign_assessor.m_manage_student'))

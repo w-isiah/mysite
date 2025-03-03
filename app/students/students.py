@@ -255,7 +255,7 @@ def edit_student(student_id):
                     connection.commit()
 
                     flash("Student updated successfully!", "success")
-                    return redirect(url_for('student.manage_students'))  # Redirect after successful update
+                    return redirect(url_for('main.index'))  # Redirect after successful update
 
                 except Exception as e:
                     flash(f"An error occurred: {str(e)}", "danger")

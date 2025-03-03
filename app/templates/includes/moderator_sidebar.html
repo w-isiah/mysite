@@ -354,19 +354,31 @@
             <a href="#" class="nav-link">
               <i class="nav-icon fas fa-user-tag"></i>
               <p>
-                Assign Assessor
+                Schoools To Assign
                 <i class="right fas fa-angle-left"></i>
               </p>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a href="{{ url_for('d_f_assign_assessor.m_manage_student') }}" class="nav-link">
+                <a href="{{ url_for('d_f_assign_assessor.internal_m_manage_student') }}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Schools To Assign</p>
+                  <p>Internal assessor Assign</p>
+                </a>
+              </li> 
+            
+            </ul>
+
+             <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{{ url_for('d_f_assign_assessor.external_m_manage_student') }}" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>External assessor Assign</p>
                 </a>
               </li>
             
             </ul>
+
+
           </li>
 
 
