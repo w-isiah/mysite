@@ -160,11 +160,18 @@ def handle_image_upload(image_file):
 
     return os.path.join(UPLOAD_FOLDER, filename)
 
+
+
+
+
+
+# Handle the form submission
 @users_bp.route('/edit_user/<int:id>', methods=['GET', 'POST'])
 def edit_user(id):
     with get_db_connection() as connection:
         with connection.cursor(dictionary=True) as cursor:
             if request.method == 'POST':
+                # Getting user data from the form
                 username = request.form['username']
                 first_name = request.form['first_name']
                 last_name = request.form['last_name']
@@ -173,31 +180,44 @@ def edit_user(id):
                 role = request.form['role']
                 profile_image = request.files.get('profile_image')
 
-                # Handle password update
+                # New internal and external roles (optional, could be None if not provided)
+                a_internal_role = request.form.get('a_internal_role')  # No default value
+                a_external_role = request.form.get('a_external_role')  # No default value
+
+                # Hash the password only if it was provided (otherwise, keep the existing password)
                 hashed_password = generate_password_hash(password) if password else get_user_password(cursor, id)
 
-                # Handle profile image upload
-                profile_image = handle_profile_image(cursor, profile_image, id)
+                # Handle profile image if uploaded
+                profile_image_path = handle_profile_image(cursor, profile_image, id)
 
-                # Update user info in DB
+                # Update the user information in the database
                 try:
-                    cursor.execute(''' 
+                    cursor.execute('''
                         UPDATE users 
-                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, role = %s, profile_image = %s 
+                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, role = %s, 
+                            profile_image = %s, a_internal_role = %s, a_external_role = %s 
                         WHERE id = %s
-                    ''', (username, first_name, last_name, other_name, hashed_password, role, profile_image, id))
+                    ''', (
+                        username, first_name, last_name, other_name, hashed_password, role, 
+                        profile_image_path, a_internal_role, a_external_role, id
+                    ))
                     connection.commit()
                     flash('User updated successfully!', 'success')
                 except mysql.connector.Error as err:
                     flash(f'Error: {err}', 'danger')
 
-                return redirect(url_for('main.index'))
+                return redirect(url_for('main.index'))  # Redirect back to the home page or user list
 
+            # Retrieve the user information from the database to pre-fill the form
             cursor.execute('SELECT * FROM users WHERE id = %s', (id,))
             user = cursor.fetchone()
 
     template = 'accounts/edit_user.html' if session['role'] == 'admin' else 'accounts/moderator/edit_user.html'
     return render_template(template, role=session.get('role'), username=session.get('username'), user=user)
+
+
+
+    
 
 def get_user_password(cursor, user_id):
     cursor.execute('SELECT password FROM users WHERE id = %s', (user_id,))

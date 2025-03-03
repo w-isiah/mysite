@@ -3,7 +3,7 @@
 {% block title %} Edit User {% endblock %}
 
 <!-- Element injected in the BODY element -->
-{% block body_class %} moderator_sidebar-mini {% endblock body_class %} 
+{% block body_class %} moderator_sidebar-mini {% endblock body_class %}
 
 <!-- Specific Page CSS goes HERE -->
 {% block stylesheets %}
@@ -25,8 +25,8 @@
 </style>
 {% endblock stylesheets %}
 
-{% block content %} 
-<div class="content-wrapper"> 
+{% block content %}
+<div class="content-wrapper">
   <div class="container-fluid">
     <div class="row mb-2">
       <div class="col-12">
@@ -74,7 +74,7 @@
         <div class="card-body">
           <form action="{{ url_for('auth.edit_user', id=user.id) }}" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            
+
             <div class="row">
               <div class="col-md-6 form-group">
                 <label for="username">Username</label>
@@ -105,8 +105,21 @@
                 <label for="role">Role</label>
                 <select class="form-control form-control-lg select2" name="role" id="role" style="width: 100%;" required>
                   <option value="School Practice Supervisor" {% if user.role == 'School Practice Supervisor' %}selected{% endif %}>School Practice Supervisor</option>
-        
                 </select>
+              </div>
+
+              <!-- Internal Role Radio Buttons (Optional) -->
+              <div class="col-md-6 form-group">
+                <label for="a_internal_role">Internal Role</label><br>
+                <input type="radio" id="a_internal_role_1" name="a_internal_role" value="1" {% if user.a_internal_role == '1' %}checked{% endif %}> Enabled
+                <input type="radio" id="a_internal_role_0" name="a_internal_role" value="0" {% if user.a_internal_role == '0' %}checked{% endif %}> Disabled
+              </div>
+
+              <!-- External Role Radio Buttons (Optional) -->
+              <div class="col-md-6 form-group">
+                <label for="a_external_role">External Role</label><br>
+                <input type="radio" id="a_external_role_1" name="a_external_role" value="1" {% if user.a_external_role == '1' %}checked{% endif %}> Enabled
+                <input type="radio" id="a_external_role_0" name="a_external_role" value="0" {% if user.a_external_role == '0' %}checked{% endif %}> Disabled
               </div>
 
               <div class="col-md-6 form-group">
@@ -129,7 +142,6 @@
       </div>
     </div>
   </section>
-
 </div>
 {% endblock content %}
 
