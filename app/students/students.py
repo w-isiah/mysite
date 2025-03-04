@@ -29,7 +29,7 @@ def fetch_programmes_and_terms():
     return programmes, terms
 
 
-@student_bp.route('/manage_students', methods=['GET', 'POST'])
+@student_bp.route('/manage_student', methods=['GET', 'POST'])
 def manage_student():
     try:
         # Database connection and fetching programmes and terms
@@ -460,7 +460,7 @@ def register_student(student_id):
                 )
                 conn.commit()
                 flash("Student's term updated successfully!", "success")
-                return redirect(url_for('student.manage_students'))
+                return redirect(url_for('student.manage_student'))
 
         cursor.close()
         conn.close()
@@ -469,10 +469,10 @@ def register_student(student_id):
 
     except Exception as e:
         flash(f"An error occurred while fetching data: {str(e)}", "danger")
-        return redirect(url_for('student.manage_students'))
+        return redirect(url_for('student.manage_student'))
 
 
-    return redirect(url_for('student.manage_students'))
+    return redirect(url_for('student.manage_student'))
 
 
 

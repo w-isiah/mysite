@@ -125,10 +125,12 @@
                            <table id="example1" class="table table-bordered table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th>Student Teacher</th>
-                                    <th>Term</th>
-                                    <th>Subject</th>
                                     <th>Reg No</th>
+                                    <th>Student Teacher</th>
+                                    
+                                    <th>Semester</th>
+                                    <th>Subject</th>
+                                    
                                     <th>Programme</th>
                                     <th>Assigned</th>
                                     <th>Assessor Match</th> <!-- Added column for match status -->
@@ -137,10 +139,11 @@
                             <tbody>
                                 {% for student in student_info %}
                                 <tr>
+                                    <td>{{ student.reg_no }}</td>
                                     <td>{{ student.student_teacher }}</td>
                                     <td>{{ student.term }}</td>
                                     <td>{{ student.subject }}</td>
-                                    <td>{{ student.reg_no }}</td>
+                                    
                                     <td>{{ student.programme_name }}</td>
                                     <td>
                                         {% if student.assigned %}

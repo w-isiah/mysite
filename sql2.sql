@@ -156,3 +156,6 @@ CREATE TABLE d_external_assign_assessor (
 ALTER TABLE terms
 ADD COLUMN academic_year varchar(255) AFTER year,
 ADD COLUMN study_year varchar(255) AFTER academic_year;
+
+
+
