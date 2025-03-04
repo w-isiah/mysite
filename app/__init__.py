@@ -41,11 +41,15 @@ from app.ratings.ratings import ratings_bp
 from app.assign_assessor.assign_assessor import assign_assessor_bp
 from app.d_f_assign_assessor.d_f_assign_assessor import d_f_assign_assessor_bp
 from app.d_f_students.d_f_students import d_f_students_bp
+from app.d_f_assessment_v1.d_f_assessment_v1 import d_f_assessment_bp
+from app.d_f_scores.d_f_scores import d_f_scores_bp
 
 
 
 
 # Register blueprints
+app.register_blueprint(d_f_scores_bp,url_prefix='/d_f_scores')
+app.register_blueprint(d_f_assessment_bp,url_prefix='/d_f_assessment')
 app.register_blueprint(d_f_students_bp,url_prefix='/d_f_students')
 app.register_blueprint(d_f_assign_assessor_bp,url_prefix='/d_f_assign_assessor')
 app.register_blueprint(modulate_bp,url_prefix='/modulate')

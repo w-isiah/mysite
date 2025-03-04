@@ -9,10 +9,10 @@ from flask import send_file
 import io
 import logging
 # Initialize blueprint
-assessment_bp = Blueprint('assessment', __name__)
+d_f_assessment_bp = Blueprint('d_f_assessment', __name__)
 
 # Assessment check route - for viewing the status of assessments for students
-@assessment_bp.route('/assessment_check')
+@d_f_assessment_bp.route('/assessment_check')
 def assessment_check():
 
 
@@ -71,7 +71,7 @@ def assessment_check():
 
 
 
-@assessment_bp.route('/check_student', methods=['GET', 'POST'])
+@d_f_assessment_bp.route('/check_student', methods=['GET', 'POST'])
 def check_student():
     role = session.get('role')  # Get the logged-in user's role
     user_id = session.get('id')  # Get the logged-in user's ID
@@ -159,7 +159,7 @@ def check_student():
 
 
 
-@assessment_bp.route('/check_student_v1/<string:reg_no>', methods=['GET', 'POST'])
+@d_f_assessment_bp.route('/check_student_v1/<string:reg_no>', methods=['GET', 'POST'])
 def check_student_v1(reg_no):
     role = session.get('role')  # Get logged-in user's role
     user_id = session.get('id')  # Get logged-in user's ID
@@ -255,9 +255,19 @@ def check_student_v1(reg_no):
 
 
 
-@assessment_bp.route('/assess_v1/<int:student_id>', methods=['GET', 'POST'])
+
+
+
+
+@d_f_assessment_bp.route('/assess_v1/<int:student_id>', methods=['GET', 'POST'])
 def assess_v1(student_id):
-    role0 = session.get('role')
+    # Get session details
+    role = session.get('role')
+    assessor_id = session.get('id')
+
+    # If role or ID is missing from session, redirect to login or show error
+    if not role or not assessor_id:
+        return redirect(url_for('login'))  # Or return an error message
     
     # Establish a database connection
     connection = get_db_connection()
@@ -268,54 +278,32 @@ def assess_v1(student_id):
         cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
         student = cursor.fetchone()
 
+        # Check if the student exists
+        if not student:
+            return f"Student with ID {student_id} not found", 404
+
+        # Fetch schools data
         cursor.execute("SELECT * FROM schools")
         schools = cursor.fetchall()
 
-        cursor.execute("SELECT * FROM ratings")
-        ratings = cursor.fetchall()
-
-        # Check if the student exists
-        if not student:
-            return "Student not found", 404  # Return a 404 error if the student does not exist
-
-        # Fetch assessment criteria data with aspect_id included
-        cursor.execute("""
-            SELECT s.aspect_id, s.aspect_name, ac.criteria_id, ac.criteria_name, s.description, s.competence
-            FROM aspect s
-            JOIN assessment_criteria ac ON s.aspect_id = ac.aspect_id
-        """)
-        data = cursor.fetchall()
-
-        # Fetch ratings by assessment_criteria_id
-        ratings_by_criteria = {}
-        for row in data:
-            cursor.execute("SELECT * FROM ratings WHERE assessment_criteria_id = %s", (row['criteria_id'],))
-            ratings_by_criteria[row['criteria_id']] = cursor.fetchall()
+    except Exception as e:
+        # Handle database errors (if any)
+        return f"An error occurred while fetching data: {str(e)}", 500
 
     finally:
-        # Close the cursor and connection to free up resources
+        # Ensure resources are closed after execution
         cursor.close()
         connection.close()
 
-    # Render the template with the fetched data
-    if session['role'] == 'Head of Department':
-        return render_template('assessment_v1/add_assessment.html',
-                               ratings_by_criteria=ratings_by_criteria, 
-                               schools=schools,
-                               username=session['username'], 
-                               role=session['role'], 
-                               student_id=student_id, 
-                               data=data, 
-                               student=student)
-    else:
-        return render_template('assessment_v1/assessor/add_assessment.html',
-                               ratings_by_criteria=ratings_by_criteria, 
-                               schools=schools,
-                               username=session['username'], 
-                               role=session['role'],
-                               student_id=student_id, 
-                               data=data, 
-                               student=student)
+    # Render the appropriate template based on user role
+    template = 'd_f_assessment_v1/add_assessment.html' if role == 'Head of Department' else 'd_f_assessment_v1/assessor/add_assessment.html'
+    return render_template(template,
+                           schools=schools,
+                           username=session.get('username'),
+                           role=role,
+                           student_id=student_id,
+                           assessor_id=assessor_id,
+                           student=student)
 
 
 
@@ -349,7 +337,8 @@ def assess_v1(student_id):
 
 
 
-@assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
+
+@d_f_assessment_bp.route('/assessment_report', methods=['GET', 'POST'])
 def assessment_report():
     try:
         # Connect to the database
@@ -498,7 +487,7 @@ def assessment_report():
 
 
 
-@assessment_bp.route('/modulate_assessment_report', methods=['GET', 'POST'])
+@d_f_assessment_bp.route('/modulate_assessment_report', methods=['GET', 'POST'])
 def modulate_assessment_report():
     try:
         # Connect to the database

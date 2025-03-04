@@ -279,6 +279,76 @@ def edit_student(student_id):
 
 
 
+@student_bp.route('/a_edit_student/<int:student_id>', methods=['GET', 'POST'])
+def a_edit_student(student_id):
+    try:
+        # Connect to the database
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Fetch student details from the database
+        cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
+        student = cursor.fetchone()
+
+        # If student doesn't exist, flash a message and redirect
+        if not student:
+            flash("Student not found!", "danger")
+            return redirect(url_for('student.manage_student'))
+
+        if request.method == 'POST':
+            # Collect form data
+            form_data = {
+                'subject': request.form.get('subject'),
+                'class': request.form.get('class'),
+                'topic': request.form.get('topic'),
+                'subtopic': request.form.get('subtopic'),
+                'teaching_time': request.form.get('teaching_time'),
+            }
+
+            # Check if all required fields are filled
+            if not all(form_data.values()):
+                flash("All fields are required!", "danger")
+            else:
+                try:
+                    # Extract form values explicitly
+                    subject = form_data['subject']
+                    class_name = form_data['class']
+                    topic = form_data['topic']
+                    subtopic = form_data['subtopic']
+                    teaching_time = form_data['teaching_time']
+
+                    # Update the student information in the database
+                    query = """
+                        UPDATE student_info
+                        SET subject = %s, class_name = %s, topic = %s, subtopic = %s, teaching_time = %s
+                        WHERE id = %s
+                    """
+                    # Values must match the placeholders in the SQL query
+                    values = (subject, class_name, topic, subtopic, teaching_time, student_id)
+
+                    cursor.execute(query, values)
+                    connection.commit()
+
+                    flash("Student updated successfully!", "success")
+                    return redirect(url_for('main.index'))  # Redirect after successful update
+
+                except Exception as e:
+                    flash(f"An error occurred: {str(e)}", "danger")
+
+        cursor.close()
+        connection.close()
+
+        # Render the template with student details
+        return render_template('student/assessor_edit_student.html', username=session['username'], student=student)
+
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('main.index'))
+
+
+
+
+
 
 
 

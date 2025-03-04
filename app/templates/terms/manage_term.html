@@ -2,7 +2,7 @@
 
 {% block title %}Manage Terms{% endblock %}
 
-{% block body_class %}moderator_sidebar-mini{% endblock %}
+{% block body_class %}moderator_sidebar-mini{% endblock body_class %}
 
 {% block stylesheets %}
 <!-- Google Font: Source Sans Pro -->
@@ -49,12 +49,12 @@
     <div class="container-fluid">
       <div class="row mb-2">
         <div class="col-sm-6">
-          <h1 class="m-0 text-dark">Manage Terms</h1>
+          <h1 class="m-0 text-dark">Semester Management</h1>
         </div>
         <div class="col-sm-6">
           <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-            <li class="breadcrumb-item active">Terms</li>
+            <li class="breadcrumb-item active">Semester List</li>
           </ol>
         </div>
       </div>
@@ -67,7 +67,7 @@
     <div class="row mb-3">
       <div class="col-12">
         <a href="{{ url_for('terms.add_term') }}" class="btn btn-primary">
-          <i class="fas fa-plus-circle"></i> Add Term
+          <i class="fas fa-plus-circle"></i> Add Semester
         </a>
       </div>
     </div>
@@ -77,14 +77,15 @@
       <div class="col-12">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Terms List</h3>
+            <h3 class="card-title">Semester List</h3>
           </div>
           <div class="card-body">
             <table id="termsTable" class="table table-bordered table-striped table-hover">
               <thead>
                 <tr>
-                  <th>Name</th>
-              
+                  <th>Semester</th>
+                  <th>Academic Year</th>
+                  <th>Study Year</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -92,7 +93,8 @@
                 {% for term in terms %}
                   <tr>
                     <td>{{ term.term }}</td>
-                  
+                    <td>{{ term.academic_year }}</td>
+                    <td>{{ term.study_year }}</td>
                     <td>
                       <div class="btn-group" role="group">
                         <a href="{{ url_for('terms.edit_term', term_id=term.id) }}" 

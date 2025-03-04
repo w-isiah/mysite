@@ -18,6 +18,9 @@ d_f_students_bp = Blueprint('d_f_students', __name__)
 
 
 
+
+
+
 @d_f_students_bp.route('/i_a_students', methods=['GET', 'POST'])
 def i_a_students():
     # Check if the user is logged in
@@ -51,24 +54,32 @@ def i_a_students():
         school_id = request.form.get('School')
         reg_no = request.form.get('reg_no')
 
-        # Updated query to include users table
+        # Updated query to include term_id, student_id, assessor_id from d_f_scores and status logic
         query = """ 
             SELECT
+                s.name as school_name,
+                si.id AS student_id,
                 si.reg_no,
                 si.student_teacher AS student_name,
-                u.username,
-                u.first_name,
-                u.last_name,
-                u.role
+                dfs.term_id,
+                dfs.student_id AS score_student_id,
+                dfs.assessor_id,
+                CASE
+                    WHEN si.id = dfs.student_id 
+                         AND si.term_id = dfs.term_id
+                         AND %s = dfs.assessor_id THEN 'assessed'
+                    ELSE 'not assessed'
+                END AS status
             FROM student_info si
             JOIN schools s ON si.school_id = s.id
             JOIN d_internal_assign_assessor di ON si.school_id = di.school_id
             JOIN users u ON di.assessor_id = u.id
+            LEFT JOIN d_f_scores dfs ON si.id = dfs.student_id AND si.term_id = dfs.term_id
             WHERE di.assessor_id = %s
         """
 
         # Add filters to the query if they are provided
-        query_params = [session['id']]  # Start with the assessor's ID
+        query_params = [session['id'], session['id']]  # Session ID for status check and WHERE clause
 
         if programme_id:
             query += " or si.programme_id = %s"
@@ -83,7 +94,7 @@ def i_a_students():
             query_params.append(school_id)
 
         if reg_no:
-            query += " or si.reg_no LIKE %s"
+            query += " OR si.reg_no LIKE %s"
             query_params.append(f"%{reg_no}%")  # Use LIKE for partial matching
 
         # Execute the query with the filtered parameters
@@ -120,5 +131,6 @@ def i_a_students():
             cursor.close()
         if conn:
             conn.close()
+
 
 

@@ -104,10 +104,11 @@
               <table id="dataTable" class="table table-bordered table-striped table-hover">
                 <thead>
                   <tr>
-                    <th class="fixed-column">Reg No</th>
-                    <th class="fixed-column">Subject</th>
-                    <th class="fixed-column">Term</th>
                     <th class="fixed-column">Student Name</th>
+                    <th >Reg No</th>
+                    <th >Subject</th>
+                    <th >Term</th>
+
                     {% for assessor in assessors %}
                       <th>{{ assessor }}</th>
                     {% endfor %}
@@ -117,10 +118,11 @@
                 <tbody>
                   {% for student in data %}
                     <tr>
-                      <td class="fixed-column">{{ student.reg_no }}</td>
-                      <td class="fixed-column">{{ student.subject }}</td>
-                      <td class="fixed-column">{{ student.term }}</td>
                       <td class="fixed-column">{{ student.student_name }}</td>
+                      <td >{{ student.reg_no }}</td>
+                      <td >{{ student.subject }}</td>
+                      <td >{{ student.term }}</td>
+                      
                       {% for assessor in assessors %}
                         <td>{{ student.get(assessor, 'Not Assessed') }}</td>
                       {% endfor %}

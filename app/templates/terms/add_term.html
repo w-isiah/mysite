@@ -66,12 +66,26 @@
             <div class="card-body">
               <form method="POST" action="{{ url_for('terms.add_term') }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                
+
+                <!-- Term Name Field -->
                 <div class="form-group">
                   <label for="name">Term Name</label>
-                  <input type="text" class="form-control" id="name" name="name" placeholder="Enter term name" required>
+                  <input type="text" class="form-control" id="name" name="term" placeholder="Enter term name" required>
                 </div>
 
+                <!-- Academic Year Field -->
+                <div class="form-group">
+                  <label for="academic_year">Academic Year</label>
+                  <input type="text" class="form-control" id="academic_year" name="academic_year" placeholder="Enter academic year" required>
+                </div>
+
+                <!-- Study Year Field -->
+                <div class="form-group">
+                  <label for="study_year">Study Year</label>
+                  <input type="text" class="form-control" id="study_year" name="study_year" placeholder="Enter study year" required>
+                </div>
+
+                <!-- Submit Button -->
                 <button type="submit" class="btn btn-primary">Add Term</button>
               </form>
             </div>

@@ -41,18 +41,25 @@ def edit_term(term_id):
 
         if not term:
             flash("Term not found!", 'danger')
-            return redirect(url_for('term.manage_term'))
+            return redirect(url_for('terms.manage_term'))
 
         if request.method == 'POST':
             # Get form data
             new_term = request.form['term'].strip()
+            new_academic_year = request.form['academic_year'].strip()
+            new_study_year = request.form['study_year'].strip()
 
+            # Validate term name
             if not new_term:
                 flash("Term name cannot be empty!", 'danger')
-                return render_template('terms/edit_term.html',username=session['username'], role=session['role'], term=term)
+                return render_template('terms/edit_term.html', username=session['username'], role=session['role'], term=term)
 
             # Update the term details in the database
-            cursor.execute("UPDATE terms SET term = %s WHERE id = %s", (new_term, term_id))
+            cursor.execute("""
+                UPDATE terms
+                SET term = %s, academic_year = %s, study_year = %s
+                WHERE id = %s
+            """, (new_term, new_academic_year, new_study_year, term_id))
             conn.commit()
 
             flash("Term updated successfully!", 'success')
@@ -63,7 +70,8 @@ def edit_term(term_id):
     finally:
         conn.close()
 
-    return render_template('terms/edit_term.html', username=session['username'], role=session['role'],term=term)
+    return render_template('terms/edit_term.html', username=session['username'], role=session['role'], term=term)
+
 
 
 # Route to delete a specific term
@@ -87,18 +95,32 @@ def delete_term(term_id):
 def add_term():
     if request.method == 'POST':
         # Get the form data from the POST request
-        name = request.form.get('name')
+        term_name = request.form.get('term').strip()
+        academic_year = request.form.get('academic_year').strip()
+        study_year = request.form.get('study_year').strip()
 
-        # Validate form field (make sure the name is provided)
-        if not name:
+        # Validate form fields (make sure the term name, academic year, and study year are provided)
+        if not term_name:
             flash("Term Name is required!", 'danger')
+            return redirect(url_for('terms.add_term'))
+        
+        # You can add further validation for academic_year and study_year if needed
+        if not academic_year:
+            flash("Academic Year is required!", 'danger')
+            return redirect(url_for('terms.add_term'))
+
+        if not study_year:
+            flash("Study Year is required!", 'danger')
             return redirect(url_for('terms.add_term'))
 
         # Insert the new term into the database
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("INSERT INTO terms (term) VALUES (%s)", (name,))
+            cursor.execute("""
+                INSERT INTO terms (term, academic_year, study_year)
+                VALUES (%s, %s, %s)
+            """, (term_name, academic_year, study_year))
             conn.commit()  # Commit the changes to the database
             conn.close()
 
@@ -109,4 +131,4 @@ def add_term():
             return redirect(url_for('terms.add_term'))
 
     # If it's a GET request, render the add term form
-    return render_template('terms/add_term.html',username=session['username'], role=session['role'],)
+    return render_template('terms/add_term.html', username=session['username'], role=session['role'])
