@@ -43,11 +43,14 @@ from app.d_f_assign_assessor.d_f_assign_assessor import d_f_assign_assessor_bp
 from app.d_f_students.d_f_students import d_f_students_bp
 from app.d_f_assessment_v1.d_f_assessment_v1 import d_f_assessment_bp
 from app.d_f_scores.d_f_scores import d_f_scores_bp
-
+from app.academic_year.academic_year import academic_year_bp
+from app.study_year.study_year import study_year_bp
 
 
 
 # Register blueprints
+app.register_blueprint(study_year_bp,url_prefix='/study_year')
+app.register_blueprint(academic_year_bp,url_prefix='/academic_year')
 app.register_blueprint(d_f_scores_bp,url_prefix='/d_f_scores')
 app.register_blueprint(d_f_assessment_bp,url_prefix='/d_f_assessment')
 app.register_blueprint(d_f_students_bp,url_prefix='/d_f_students')

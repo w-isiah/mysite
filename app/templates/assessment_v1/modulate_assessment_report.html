@@ -36,7 +36,7 @@
 
   th, td { white-space: nowrap; }
   div.dataTables_wrapper {
-    width: 800px;
+    width: 100%;
     margin: 0 auto;
   }
 </style>
@@ -178,7 +178,8 @@
     // Initialize Select2
     $('.select2').select2();
 
-    $('#dataTable').DataTable({
+    // Initialize DataTable with fixed columns
+    var table = $('#dataTable').DataTable({
       fixedColumns: {
         left: 2,
         right: 1
@@ -194,6 +195,10 @@
       $('#exportExcelButton').prop('disabled', $("#dataTable tbody tr").length === 0);
     }
 
+    // Call checkTableData after table initialization
+    checkTableData();
+
+    // Export to Excel on button click
     $('#exportExcelButton').click(function (e) {
       e.preventDefault();
       exportTableToExcel();

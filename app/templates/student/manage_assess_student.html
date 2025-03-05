@@ -127,7 +127,6 @@
                                         <th>Student Teacher</th>
                                         <th>Semester</th>
                                         <th>Subject</th>
-                                        
                                         <th>Programme</th>
                                         <th>Assigned</th>
                                         <th>Status</th> <!-- Status column -->
@@ -140,7 +139,6 @@
                                         <td>{{ student.student_teacher }}</td>
                                         <td>{{ student.term }}</td>
                                         <td>{{ student.subject }}</td>
-                                        
                                         <td>{{ student.programme_name }}</td>
                                         <td>
                                             {% if student.assigned %}
@@ -152,25 +150,32 @@
                                         <td>
                                             {% if student.status == 'Assessed' %}
                                             <span class="badge badge-success">Assessed</span> - {{ student.mark }}
-                                            {% else %}
+                                            {% elif student.status == 'Unassessed' %}
                                             <span class="badge badge-warning">Unassessed</span>
+                                            <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
+                                                <i class="icon-edit"></i> Assess Now
+                                            </a>
+                                            {% else %}
+                                            <span class="badge badge-danger">Update Student Data</span>
 
-                                          <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
-                                              <i class="icon-edit"></i> Assess Now
-                                          </a>
-                                          {% endif %}
-                                      </td> <!-- Status column displaying mark or "Unassessed" -->
-                                  </tr>
-                                  {% endfor %}
-                              </tbody>
-                          </table>
-                      </form>
-                  </div>
-              </div>
-          </div>
-      </div>
+                                            <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Edit Student">
+                                                <i class="fas fa-edit"> Update </i>
+                                            </a>
 
-  </div>
+
+                                            {% endif %}
+                                        </td> <!-- Status column displaying mark or "Unassessed" -->
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </section>
 </div>
 </div>

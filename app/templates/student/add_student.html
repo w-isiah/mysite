@@ -95,7 +95,7 @@
                 <!-- Programme Selection -->
                 <div class="form-group">
                   <label for="programme_id">Programme:</label>
-                  <select name="programme_id" id="programme" class="form-control select2" required>
+                  <select class="form-control select2" name="programme_id" id="programme" class="form-control select2" required>
                     <option value="" selected disabled>Select a Programme</option>
                     {% for programme in programmes %}
                     <option value="{{ programme.id }}">{{ programme.programme_name }}</option>
@@ -111,14 +111,40 @@
 
                 <!-- Term Selection -->
                 <div class="form-group">
-                  <label for="term_id">Term:</label>
+                  <label for="term_id">Semester:</label>
                   <select class="form-control select2" name="term_id" id="terms" style="width: 100%;" required>
-                    <option value="" selected disabled>Select a Term</option>
+                    <option value="" selected disabled>Select a Semester</option>
                     {% for term in terms %}
                     <option value="{{ term.id }}">{{ term.term }}</option>
                     {% endfor %}
                   </select>
                 </div>
+
+                <!-- Term Selection -->
+                <div class="form-group">
+                  <label for="academic_year_id">Academic year:</label>
+                  <select class="form-control select2" name="academic_year_id" id="academic_year" style="width: 100%;" required>
+                    <option value="" selected disabled>Select academic year</option>
+                    {% for academic_year in academic_years %}
+                    <option value="{{ academic_year.id }}">{{ academic_year.academic_year }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+
+                <!-- Study Year Selection -->
+                <div class="form-group">
+                  <label for="study_year_id">Study Year:</label>
+                  <select class="form-control select2" name="study_year_id" id="study_years" style="width: 100%;" required>
+                    <option value="" selected disabled>Select Study Year</option>
+                    {% for study_year in study_years %}
+                    <option value="{{ study_year.id }}">{{ study_year.study_year }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+
+
 
                 <!-- Subject, Class, Teaching Time, Topic, Subtopic -->
                 <div class="form-group">

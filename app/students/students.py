@@ -137,8 +137,14 @@ def add_student():
     cursor.execute('SELECT id, term FROM terms')
     terms = cursor.fetchall()
 
+    cursor.execute('SELECT id, academic_year FROM academic_year')
+    academic_years = cursor.fetchall()
+
     cursor.execute('SELECT id, name FROM schools')
     schools = cursor.fetchall()
+
+    cursor.execute('SELECT id, study_year FROM study_year')
+    study_years = cursor.fetchall()
 
     if request.method == 'POST':
         # Retrieve form data
@@ -152,6 +158,8 @@ def add_student():
         teaching_time = request.form['teaching_time']
         topic = request.form['topic']
         subtopic = request.form['subtopic']
+        academic_year_id = request.form['academic_year_id']
+        study_year_id = request.form['study_year_id']
 
         try:
             # Check if the registration number already exists
@@ -160,38 +168,42 @@ def add_student():
 
             if result['COUNT(*)'] > 0:
                 flash('This registration number already exists. Please use a different one.', 'danger')
-                return render_template('student/add_student.html', schools=schools, programmes=programmes, terms=terms)
+                return render_template('student/add_student.html', study_years=study_years, academic_years=academic_years, schools=schools, programmes=programmes, terms=terms)
 
             # Insert data into the student_info table
             query = """
                 INSERT INTO student_info (
-                    student_teacher, programme_id, reg_no, term_id, subject, class_name, teaching_time, topic, subtopic, school_id
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    student_teacher, programme_id, reg_no, term_id, school_id, subject, 
+                    class_name, teaching_time, topic, subtopic, academic_year_id, study_year_id
+                ) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            values = (student_teacher, programme_id, reg_no, term_id, subject, class_name, teaching_time, topic, subtopic, school_id)
+            values = (student_teacher, programme_id, reg_no, term_id, school_id, subject, 
+                      class_name, teaching_time, topic, subtopic, academic_year_id, study_year_id)
 
             cursor.execute(query, values)
             connection.commit()  # Commit the transaction
 
             flash('Student Teacher added successfully!', 'success')
-            return redirect(url_for('student.add_students'))
+            return redirect(url_for('student.add_student'))
 
         except mysql.connector.Error as e:
             connection.rollback()  # Rollback on error
             flash(f'Error: {e}', 'danger')
-            return render_template('student/add_student.html', schools=schools, programmes=programmes, terms=terms)
+            return render_template('student/add_student.html', study_years=study_years, academic_years=academic_years, schools=schools, programmes=programmes, terms=terms)
 
         finally:
             cursor.close()  # Always close the cursor after the operation
 
     # Return the page with dropdown data on GET request
-    return render_template('student/add_student.html', schools=schools, programmes=programmes, terms=terms)
-
-
+    return render_template('student/add_student.html',  study_years=study_years, academic_years=academic_years, schools=schools, programmes=programmes, terms=terms)
 
  
  
   
+
+
+
 
 @student_bp.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
 def edit_student(student_id):
@@ -204,7 +216,7 @@ def edit_student(student_id):
         cursor.execute("SELECT * FROM student_info WHERE id = %s", (student_id,))
         student = cursor.fetchone()
 
-        # Fetch programmes, terms, and schools for dropdown options
+        # Fetch dropdown data for programmes, terms, schools, academic_years, and study_years
         cursor.execute('SELECT id, programme_name FROM programmes')
         programmes = cursor.fetchall()
         
@@ -214,15 +226,22 @@ def edit_student(student_id):
         cursor.execute('SELECT id, name FROM schools')
         schools = cursor.fetchall()
 
+        cursor.execute('SELECT id, academic_year FROM academic_year')
+        academic_years = cursor.fetchall()
+
+        cursor.execute('SELECT id, study_year FROM study_year')
+        study_years = cursor.fetchall()
+
         # If student doesn't exist, flash a message and redirect
         if not student:
             flash("Student not found!", "danger")
             return redirect(url_for('student.manage_student'))
 
         if request.method == 'POST':
-            # Collect form data, including the school_id
+            # Collect form data, including academic_year_id and study_year_id
             form_data = {key: request.form[key] for key in ('student_teacher', 'programme_id', 'reg_no', 'term_id', 
-                                                            'subject', 'class', 'topic', 'subtopic', 'teaching_time', 'school_id')}
+                                                            'subject', 'class', 'topic', 'subtopic', 'teaching_time', 
+                                                            'school_id', 'academic_year_id', 'study_year_id')}
 
             # Check if all required fields are filled
             if not all(form_data.values()):
@@ -240,16 +259,20 @@ def edit_student(student_id):
                     subtopic = form_data['subtopic']
                     teaching_time = form_data['teaching_time']
                     school_id = form_data['school_id']
+                    academic_year_id = form_data['academic_year_id']
+                    study_year_id = form_data['study_year_id']
 
                     # Update the student information in the database
                     query = """
                         UPDATE student_info
                         SET student_teacher = %s, programme_id = %s, reg_no = %s, term_id = %s,
-                            subject = %s, class_name = %s, topic = %s, subtopic = %s, teaching_time = %s, school_id = %s
+                            subject = %s, class_name = %s, topic = %s, subtopic = %s, teaching_time = %s,
+                            school_id = %s, academic_year_id = %s, study_year_id = %s
                         WHERE id = %s
                     """
                     # Values must match the placeholders in the SQL query
-                    values = (student_teacher, programme_id, reg_no, term_id, subject, class_name, topic, subtopic, teaching_time, school_id, student_id)
+                    values = (student_teacher, programme_id, reg_no, term_id, subject, class_name, topic, subtopic, 
+                              teaching_time, school_id, academic_year_id, study_year_id, student_id)
 
                     cursor.execute(query, values)
                     connection.commit()
@@ -263,13 +286,15 @@ def edit_student(student_id):
         cursor.close()
         connection.close()
 
-        # Render the template with student details, programmes, terms, and schools
+        # Render the template with student details, programmes, terms, schools, academic_years, and study_years
         return render_template('student/edit_student.html', username=session['username'], student=student, 
-                               programmes=programmes, terms=terms, schools=schools)
+                               programmes=programmes, terms=terms, schools=schools, academic_years=academic_years,
+                               study_years=study_years)
 
     except Exception as e:
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('main.index'))
+
 
 
 
@@ -473,6 +498,56 @@ def register_student(student_id):
 
 
     return redirect(url_for('student.manage_student'))
+
+
+
+
+
+
+
+@student_bp.route('/register_selected_students', methods=['POST'])
+def register_selected_students():
+    try:
+        # Get the list of selected students' IDs
+        selected_students = request.form.getlist('students[]')
+        if not selected_students:
+            flash("No students selected!", "danger")
+            return redirect(url_for('student.manage_student'))
+
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Fetch the terms for the dropdown
+        cursor.execute("SELECT id, term FROM terms")
+        terms = cursor.fetchall()
+
+        # Check if a term is provided in the form
+        term_id = request.form.get('term_id')
+        if not term_id:
+            flash("Term is required!", "danger")
+            return redirect(url_for('student.manage_student'))
+
+        # Loop through the selected students and update their term_id
+        for student_id in selected_students:
+            cursor.execute(
+                "UPDATE student_info SET term_id = %s WHERE id = %s",
+                (term_id, student_id)
+            )
+
+        # Commit the changes to the database
+        conn.commit()
+        flash(f"Successfully registered {len(selected_students)} students.", "success")
+        return redirect(url_for('student.manage_student'))
+
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('student.manage_student'))
+
+    finally:
+        cursor.close()
+        conn.close()
+
 
 
 
@@ -869,8 +944,16 @@ def manage_assess_student():
                 student['status'] = 'Assessed'
                 student['mark'] = mark_result['marks']  # Store the mark if available
             else:
-                student['status'] = 'Unassessed'
-                student['mark'] = None
+                # Check if there's any missing data in the student's information (e.g., NULL values for required fields)
+                if (not student['term'] or not student['programme_name'] or
+                    not student['class_name'] or not student['reg_no'] or 
+                    not student['subject'] or not student['topic'] or 
+                    not student['subtopic'] or not student['teaching_time']):
+                    student['status'] = 'Update Student Data'
+                    student['mark'] = None
+                else:
+                    student['status'] = 'Unassessed'
+                    student['mark'] = None
 
         cursor.close()
         conn.close()
@@ -889,6 +972,14 @@ def manage_assess_student():
         print(f"Error occurred: {str(e)}")  # For debugging
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
+
+
+
+
+
+
+
+
 
 
 

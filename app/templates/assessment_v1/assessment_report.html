@@ -172,7 +172,8 @@
     // Initialize Select2
     $('.select2').select2();
 
-    $('#example').DataTable({
+    // Initialize DataTable
+    var table = $('#example').DataTable({
       fixedColumns: {
         left: 2,
         right: 1
@@ -185,15 +186,21 @@
 
     // Enable export button if data exists
     function checkTableData() {
+      // Check if there are any rows in the table body and enable the button if there are
       $('#exportExcelButton').prop('disabled', $("#example tbody tr").length === 0);
     }
 
+    // Call checkTableData after the table is initialized and populated
+    checkTableData();
+
+    // Enable export button when clicked
     $('#exportExcelButton').click(function (e) {
       e.preventDefault();
       exportTableToExcel();
     });
   });
 
+  // Export table to Excel
   function exportTableToExcel() {
     var table = document.getElementById('example');
     var wb = XLSX.utils.table_to_book(table, { sheet: 'Assessment Data' });

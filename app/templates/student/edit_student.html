@@ -83,7 +83,7 @@
                   <i class="fas fa-user-plus"></i> View Students
                 </a>
               </div>
-         </div>
+            </div>
           </div>
         </div>
       </div>
@@ -170,11 +170,6 @@
                     <input type="datetime-local" id="teaching_time" name="teaching_time" class="form-control" value="{{ student.teaching_time}}" />
                   </div>
 
-
-          
-
-
-
                   <!-- Topic Input -->
                   <div class="form-group">
                     <label for="topic">Topic:</label>
@@ -185,6 +180,30 @@
                   <div class="form-group">
                     <label for="subtopic">Subtopic:</label>
                     <input type="text" id="subtopic" name="subtopic" class="form-control" value="{{ student.subtopic }}" />
+                  </div>
+
+                  <!-- Academic Year Selection -->
+                  <div class="form-group">
+                    <label for="academic_year_id">Academic Year:</label>
+                    <select name="academic_year_id" id="academic_year_id" class="form-control select2" required>
+                      {% for academic_year in academic_years %}
+                      <option value="{{ academic_year.id }}" {% if academic_year.id == student.academic_year_id %}selected{% endif %}>
+                        {{ academic_year.academic_year }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <!-- Study Year Selection -->
+                  <div class="form-group">
+                    <label for="study_year_id">Study Year:</label>
+                    <select name="study_year_id" id="study_year_id" class="form-control select2" required>
+                      {% for study_year in study_years %}
+                      <option value="{{ study_year.id }}" {% if study_year.id == student.study_year_id %}selected{% endif %}>
+                        {{ study_year.study_year }}
+                      </option>
+                      {% endfor %}
+                    </select>
                   </div>
 
                 </fieldset>

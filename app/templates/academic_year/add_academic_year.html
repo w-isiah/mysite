@@ -1,6 +1,6 @@
 {% extends "layouts/moderator_base.html" %}
 
-{% block title %}Add Term{% endblock %}
+{% block title %}Add Academic Year{% endblock %}
 
 {% block body_class %}moderator_sidebar-mini{% endblock body_class %}
 
@@ -19,13 +19,13 @@
     <div class="container-fluid">
       <div class="row mb-2">
         <div class="col-sm-6">
-          <h1 class="m-0 text-dark">Add Semester</h1>
+          <h1 class="m-0 text-dark">Add Academic Year</h1>
         </div>
         <div class="col-sm-6">
           <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('terms.manage_term') }}">Semesters</a></li>
-            <li class="breadcrumb-item active">Add Semesters</li>
+            <li class="breadcrumb-item"><a href="{{ url_for('academic_year.manage_academic_year') }}">Academic Years</a></li>
+            <li class="breadcrumb-item active">Add Academic Year</li>
           </ol>
         </div>
       </div>
@@ -56,27 +56,25 @@
   <section class="content">
     <div class="container-fluid">
 
-      <!-- Add Term Form -->
+      <!-- Add Academic Year Form -->
       <div class="row">
         <div class="col-md-12">
           <div class="card card-info">
             <div class="card-header">
-              <h3 class="card-title">Add Semester</h3>
+              <h3 class="card-title">Add Academic Year</h3>
             </div>
             <div class="card-body">
-              <form method="POST" action="{{ url_for('terms.add_term') }}">
+              <form method="POST" action="{{ url_for('academic_year.add_academic_year') }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                <!-- Term Name Field -->
+                <!-- Academic Year Field -->
                 <div class="form-group">
-                  <label for="name">Semester</label>
-                  <input type="text" class="form-control" id="name" name="term" placeholder="Enter Semester" required>
+                  <label for="academic_year">Academic Year</label>
+                  <input type="text" class="form-control" id="academic_year" name="academic_year" placeholder="Enter academic year" required>
                 </div>
 
-               
-
                 <!-- Submit Button -->
-                <button type="submit" class="btn btn-primary">Add Semester</button>
+                <button type="submit" class="btn btn-primary">Add Academic Year</button>
               </form>
             </div>
           </div>

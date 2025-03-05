@@ -108,30 +108,85 @@
           </ul>
         </li>
 
-        <!-- Terms -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-calendar-check"></i>
-            <p>
-              Terms
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('terms.manage_term') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Terms</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('terms.add_term') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Add Terms</p>
-              </a>
-            </li>
-          </ul>
-        </li>
+       <!-- Academic Years -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-calendar-check"></i>
+    <p>
+      Academic Years
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('academic_year.manage_academic_year') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Academic Years</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('academic_year.add_academic_year') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Add Academic Year</p>
+      </a>
+    </li>
+  </ul>
+</li>
+
+<!-- Terms -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-calendar-check"></i>
+    <p>
+      Semesters
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('terms.manage_term') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Manage Semesters</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('terms.add_term') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Add Semester</p>
+      </a>
+    </li>
+  </ul>
+</li>
+
+<!-- Study Years -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-calendar-check"></i>
+    <p>
+      Study Years
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('study_year.manage_study_year') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Manage Study Years</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('study_year.add_study_year') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Add Study Year</p>
+      </a>
+    </li>
+  </ul>
+</li>
+
+
+
+
+
 
 
 
