@@ -3,17 +3,13 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.db import get_db_connection  # Assuming you have a custom db module to manage DB connections
 from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
+from flask import session, flash, redirect, url_for, render_template, request
+import logging
+
+import random
 
 # Initialize the blueprint
 scores_bp = Blueprint('scores', __name__)
-
-from flask import session, flash, redirect, url_for, render_template, request
-import logging
-
-from flask import session, flash, redirect, url_for, render_template, request
-import logging
-
-
 
 
 
@@ -61,30 +57,34 @@ def save_scores():
             flash(f"Error converting scores: {str(e)}", "danger")
             return redirect(url_for("main.index"))
 
-        max_score = 3 * len(criteria_ids)
+        max_score = 5 * len(criteria_ids)
         print(f"Max score: {max_score}")
 
         if max_score > 0:
             total_percentage = (total_score / max_score) * 100
             total_percentage = round(min(total_percentage, 100), 0)
 
+            # Generate a random SKU
+            marks_scores_sku = str(random.randint(1000000000, 9999999999))  # Generate a 10-digit random number
+
+            # Insert into `marks` table with `marks_scores_sku`
             cursor.execute("""
-                INSERT INTO marks (student_id, assessor_id, term_id, school_id, marks, assessment_type, date_awarded)
-                VALUES (%s, %s, %s, %s, %s, %s, CURDATE())
-                ON DUPLICATE KEY UPDATE marks = %s, date_awarded = CURDATE()
-            """, (student_id, assessor_id, term_id, school_id, total_percentage, "system", total_percentage))
+                INSERT INTO marks (student_id, assessor_id, term_id, school_id, marks, assessment_type, date_awarded, marks_scores_sku)
+                VALUES (%s, %s, %s, %s, %s, %s, CURDATE(), %s)
+                ON DUPLICATE KEY UPDATE marks = %s, date_awarded = CURDATE(), marks_scores_sku = %s
+            """, (student_id, assessor_id, term_id, school_id, total_percentage, "system", marks_scores_sku, total_percentage, marks_scores_sku))
 
             conn.commit()
-            print(f"Inserted into marks: student_id={student_id}, assessor_id={assessor_id}, total_percentage={total_percentage}")
+            print(f"Inserted into marks: student_id={student_id}, assessor_id={assessor_id}, total_percentage={total_percentage}, marks_scores_sku={marks_scores_sku}")
         else:
             flash("Invalid max score calculated. No data inserted into marks.", "danger")
             return redirect(url_for("main.index"))
 
         # Insert the comment into the general_comments table
         cursor.execute("""
-            INSERT INTO general_comments (student_id, assessor_id, term_id, comment)
-            VALUES (%s, %s, %s, %s)
-        """, (student_id, assessor_id, term_id, comment))
+            INSERT INTO general_comments (student_id, assessor_id, term_id, comment,marks_scores_sku)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (student_id, assessor_id, term_id, comment,marks_scores_sku))
 
         conn.commit()
         print(f"Inserted into general_comments: student_id={student_id}, assessor_id={assessor_id}, comment={comment}")
@@ -95,26 +95,20 @@ def save_scores():
             aspect_id = aspect_ids[idx]
 
             data_to_insert_scores.append(
-                (student_id, aspect_id, criteria_id, assessor_id, term_id, school_id, score)
+                (student_id, aspect_id, criteria_id, assessor_id, term_id, school_id, score, marks_scores_sku)
             )
 
+        # Insert into `scores` table with `marks_scores_sku`
         cursor.executemany("""
-            INSERT INTO scores (student_id, aspect_id, criteria_id, assessor_id, term_id, school_id, score)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO scores (student_id, aspect_id, criteria_id, assessor_id, term_id, school_id, score, marks_scores_sku)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, data_to_insert_scores)
         conn.commit()
 
         print("Inserted into scores table successfully.")
 
         flash("Scores and comments saved successfully!", "success")
-
-        if role0 == "Head of Department":
-            return render_template("scores/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
-        elif role0 == "School Practice Supervisor":
-            return render_template("scores/assessor/evaluation_summary.html", username=session['username'], role=session['role'], student_id=student_id, term_id=term_id)
-        else:
-            flash("Unauthorized role. Cannot view the summary.", "danger")
-            return redirect(url_for("main.index"))
+        return redirect(url_for("student.manage_assess_students"))
 
     except Exception as e:
         logging.error(f"An error occurred while saving scores: {str(e)}")
@@ -125,6 +119,72 @@ def save_scores():
         conn.close()
 
 
+
+
+@scores_bp.route("/view_scores/<string:marks_scores_sku>", methods=["GET", "POST"])
+def view_scores(marks_scores_sku):
+    role0 = session.get('role')
+
+    if "id" not in session:
+        flash("You must be logged in to submit scores.", "danger")
+        return redirect(url_for("auth.login"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        assessor_id = session["id"]
+
+        # Fetch the data using marks_scores_sku from both the `marks` and `scores` tables
+        cursor.execute("""
+            SELECT m.student_id, m.assessor_id, m.term_id, m.school_id, m.marks, m.assessment_type, m.date_awarded, m.marks_scores_sku, 
+                   s.aspect_id, a.aspect_name, c.criteria_name, s.score
+            FROM marks m
+            JOIN scores s ON m.marks_scores_sku = s.marks_scores_sku
+            JOIN aspect a ON s.aspect_id = a.aspect_id
+            JOIN assessment_criteria c ON s.criteria_id = c.criteria_id
+            WHERE m.marks_scores_sku = %s
+        """, (marks_scores_sku,))
+        saved_data = cursor.fetchall()
+
+        cursor.execute('SELECT comment FROM general_comments WHERE marks_scores_sku= %s', (marks_scores_sku,))
+        comment = cursor.fetchone()
+        print(f'comment is : {comment}')
+
+
+
+        if not saved_data:
+            flash("No data found for this marks_scores_sku.", "warning")
+            return redirect(url_for("main.index"))
+
+        flash("Scores fetched successfully!", "success")
+
+        # Determine the user's role and render the appropriate template
+        if role0 == "Head of Department":
+            return render_template("scores/evaluation_summary.html", 
+                                   username=session['username'], 
+                                   role=session['role'],
+                                   comment=comment, 
+                                   saved_data=saved_data, 
+                                   marks_scores_sku=marks_scores_sku)
+        elif role0 == "School Practice Supervisor":
+            return render_template("scores/assessor/evaluation_summary.html", 
+                                   username=session['username'], 
+                                   role=session['role'], 
+                                   comment=comment, 
+                                   saved_data=saved_data, 
+                                   marks_scores_sku=marks_scores_sku)
+        else:
+            flash("Unauthorized role. Cannot view the summary.", "danger")
+            return redirect(url_for("main.index"))
+
+    except Exception as e:
+        logging.error(f"An error occurred while viewing scores: {str(e)}")
+        flash(f"An error occurred while viewing scores: {str(e)}", "danger")
+        return redirect(url_for("main.index"))
+
+    finally:
+        conn.close()
 
 
 

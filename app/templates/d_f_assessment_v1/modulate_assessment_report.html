@@ -92,7 +92,7 @@
               </form>
 
               <!-- Export to Excel Button -->
-              <button id="exportExcelButton" class="btn btn-primary btn-sm" disabled>Export to Excel</button>
+              <button id="exportExcelButton" class="btn btn-primary btn-sm">Export to Excel</button>
             </div>
           </div>
         </div>
@@ -117,10 +117,10 @@
                 <tbody>
                   {% for student in data %}
                     <tr>
-                      <td class="fixed-column">{{ student.reg_no }}</td>
-                      <td class="fixed-column">{{ student.subject }}</td>
-                      <td class="fixed-column">{{ student.term }}</td>
-                      <td class="fixed-column">{{ student.student_name }}</td>
+                      <td>{{ student.reg_no }}</td>
+                      <td >{{ student.subject }}</td>
+                      <td >{{ student.term }}</td>
+                      <td >{{ student.student_name }}</td>
                       {% for assessor in assessors %}
                         <td>{{ student.get(assessor, 'Not Assessed') }}</td>
                       {% endfor %}
@@ -171,12 +171,7 @@
       initComplete: checkTableData
     });
 
-    // Enable export button if data exists
-    function checkTableData() {
-      $('#exportExcelButton').prop('disabled', $("#dataTable tbody tr").length === 0);
-    }
 
-    table.on('draw', checkTableData);
 
     $('#exportExcelButton').click(function (e) {
       e.preventDefault();

@@ -123,7 +123,8 @@
                             <!-- Students Table -->
                             <table id="example1" class="table table-bordered table-striped table-hover">
                                 <thead>
-                                    <tr><th>Reg No</th>
+                                    <tr>
+                                        <th>Reg No</th>
                                         <th>Student Teacher</th>
                                         <th>Semester</th>
                                         <th>Subject</th>
@@ -137,7 +138,7 @@
                                     <tr>
                                         <td>{{ student.reg_no }}</td>
                                         <td>{{ student.student_teacher }}</td>
-                                        <td>{{ student.term }}</td>
+                                        <td>{{ student.term_name }}</td>
                                         <td>{{ student.subject }}</td>
                                         <td>{{ student.programme_name }}</td>
                                         <td>
@@ -150,6 +151,9 @@
                                         <td>
                                             {% if student.status == 'Assessed' %}
                                             <span class="badge badge-success">Assessed</span> - {{ student.mark }}
+                                            <a href="{{ url_for('scores.view_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm">
+                                                <i class="icon-edit"></i> View Scores
+                                            </a>
                                             {% elif student.status == 'Unassessed' %}
                                             <span class="badge badge-warning">Unassessed</span>
                                             <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
@@ -157,12 +161,9 @@
                                             </a>
                                             {% else %}
                                             <span class="badge badge-danger">Update Student Data</span>
-
-                                            <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Edit Student">
+                                            <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
                                                 <i class="fas fa-edit"> Update </i>
                                             </a>
-
-
                                             {% endif %}
                                         </td> <!-- Status column displaying mark or "Unassessed" -->
                                     </tr>
@@ -180,7 +181,6 @@
 </div>
 </div>
 {% endblock content %}
-
 
 {% block javascripts %}
 <script src="/static/assets/plugins/jquery/jquery.min.js"></script>

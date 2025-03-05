@@ -856,7 +856,7 @@ def manage_assigned_student():
 
 
 @student_bp.route('/manage_assess_students', methods=['GET', 'POST'])
-def manage_assess_student():
+def manage_assess_students():
     try:
         # Ensure that the session has a valid assessor id
         if 'id' not in session:
@@ -866,36 +866,39 @@ def manage_assess_student():
         # Database connection and fetching programmes and terms
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+
         programmes, terms = fetch_programmes_and_terms()
 
         # Fetch assessors with corrected query
-        assessors_query = "SELECT id, username FROM users WHERE role != 'admin' AND role != 'Head of Department'"
+        assessors_query = """
+            SELECT id, username FROM users WHERE role != 'admin' AND role != 'Head of Department'
+        """
         cursor.execute(assessors_query)
         assessors = cursor.fetchall()
 
         # Base query for student information, modified to only include students assigned to the current assessor
         query = """
-        SELECT 
-            si.id AS student_id,
-            si.student_teacher,  
-            si.reg_no, 
-            si.subject,
-            si.class_name, 
-            si.topic, 
-            si.subtopic, 
-            si.teaching_time,
-            p.programme_name, 
-            p.description AS programme_description,
-            t.term AS term,
-            a.assessor_id IS NOT NULL AS assigned,
-            u.username AS assessor_name,  -- Added to fetch assessor's name
-            si.term_id AS term_id
-        FROM student_info si
-        LEFT JOIN programmes p ON si.programme_id = p.id
-        LEFT JOIN terms t ON si.term_id = t.id
-        LEFT JOIN assign_assessor a ON si.id = a.student_id
-        LEFT JOIN users u ON a.assessor_id = u.id
-        WHERE a.assessor_id = %s
+            SELECT 
+                si.id AS student_id,
+                si.student_teacher,  
+                si.reg_no, 
+                si.subject,
+                si.class_name, 
+                si.topic, 
+                si.subtopic, 
+                si.teaching_time,
+                p.programme_name, 
+                p.description AS programme_description,
+                t.term AS term,
+                a.assessor_id IS NOT NULL AS assigned,
+                u.username AS assessor_name,
+                si.term_id AS term_id
+            FROM student_info si
+            LEFT JOIN programmes p ON si.programme_id = p.id
+            LEFT JOIN terms t ON si.term_id = t.id
+            LEFT JOIN assign_assessor a ON si.id = a.student_id
+            LEFT JOIN users u ON a.assessor_id = u.id
+            WHERE a.assessor_id = %s
         """
 
         # Prepare params for filtering
@@ -904,8 +907,6 @@ def manage_assess_student():
         # If it's a POST request, add filters to the query
         if request.method == 'POST':
             conditions = []
-
-            # Handle dynamic filtering
             if programme := request.form.get('programme'):
                 conditions.append("si.programme_id = %s")
                 params.append(programme)
@@ -932,10 +933,10 @@ def manage_assess_student():
 
             # Query to check if the student has a mark for the same term_id by this specific assessor
             mark_query = """
-            SELECT marks 
-            FROM marks 
-            WHERE student_id = %s AND term_id = %s AND assessor_id = %s
-            LIMIT 1
+                SELECT marks, marks_scores_sku
+                FROM marks 
+                WHERE student_id = %s AND term_id = %s AND assessor_id = %s
+                LIMIT 1
             """
             cursor.execute(mark_query, (student_id, term_id, session['id']))
             mark_result = cursor.fetchone()
@@ -943,12 +944,13 @@ def manage_assess_student():
             if mark_result:
                 student['status'] = 'Assessed'
                 student['mark'] = mark_result['marks']  # Store the mark if available
+                student['marks_scores_sku'] = mark_result['marks_scores_sku']
             else:
-                # Check if there's any missing data in the student's information (e.g., NULL values for required fields)
-                if (not student['term'] or not student['programme_name'] or
-                    not student['class_name'] or not student['reg_no'] or 
-                    not student['subject'] or not student['topic'] or 
-                    not student['subtopic'] or not student['teaching_time']):
+                # Check if there is any missing data in the student's information
+                required_fields = ['term', 'programme_name', 'class_name', 'reg_no', 'subject', 'topic', 'subtopic', 'teaching_time']
+                missing_fields = [field for field in required_fields if not student.get(field)]
+
+                if missing_fields:
                     student['status'] = 'Update Student Data'
                     student['mark'] = None
                 else:
