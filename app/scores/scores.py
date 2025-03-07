@@ -194,8 +194,8 @@ def view_scores(marks_scores_sku):
 
 
 
-@scores_bp.route("/edit_score/<int:score_id>", methods=["GET", "POST"])
-def edit_score(score_id):
+@scores_bp.route("/old_edit_score/<string:marks_scores_sku>", methods=["GET", "POST"])
+def old_edit_score(marks_scores_sku):
     conn = get_db_connection()
     try:
         if request.method == "POST":
@@ -254,3 +254,159 @@ def edit_score(score_id):
     finally:
         conn.close()
 
+
+
+
+
+
+
+
+
+@scores_bp.route("/edit_scores/<string:marks_scores_sku>", methods=["GET", "POST"])
+def edit_scores(marks_scores_sku):
+    conn = get_db_connection()
+
+    try:
+        if request.method == "POST":
+            # Handle form submission
+            score = request.form.get("score")
+            comment = request.form.get("comment")
+
+            # Validate score input
+            try:
+                score = float(score)
+            except ValueError:
+                flash("Invalid score. Please enter a numeric value.", "danger")
+                return redirect(url_for("scores.edit_scores", marks_scores_sku=marks_scores_sku))
+
+            if len(comment) > 255:
+                flash("Comment is too long. Maximum 255 characters allowed.", "danger")
+                return redirect(url_for("scores.edit_scores", marks_scores_sku=marks_scores_sku))
+
+            # Update the score in the 'scores' table for the given marks_scores_sku
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE scores
+                    SET score = %s
+                    WHERE marks_scores_sku = %s
+                    """,
+                    (score, marks_scores_sku),
+                )
+                
+                # Recalculate the total score based on all the related records in the 'scores' table
+                cursor.execute(
+                    """
+                    SELECT SUM(score) AS total_score
+                    FROM scores
+                    WHERE marks_scores_sku = %s
+                    """,
+                    (marks_scores_sku,)
+                )
+                result = cursor.fetchone()
+
+                if not result or result['total_score'] is None:
+                    flash("Error recalculating total score.", "danger")
+                    return redirect(url_for("main.index"))
+
+                total_score = result['total_score']
+                print(f"Recalculated total score: {total_score}")
+
+                # Calculate the max possible score for this set of scores
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total_criteria
+                    FROM scores
+                    WHERE marks_scores_sku = %s
+                    """,
+                    (marks_scores_sku,)
+                )
+                criteria_count = cursor.fetchone()['total_criteria']
+                
+                max_score = 5 * criteria_count  # Assume max score is 5 for each criterion
+                print(f"Max score: {max_score}")
+
+                if max_score > 0:
+                    total_percentage = (total_score / max_score) * 100
+                    total_percentage = round(min(total_percentage, 100), 0)  # Ensure it's capped at 100%
+
+                    # Update the marks table with the new total score
+                    cursor.execute(
+                        """
+                        UPDATE marks
+                        SET marks = %s, assessment_type = 'system', date_awarded = CURDATE()
+                        WHERE marks_scores_sku = %s
+                        """,
+                        (total_percentage, marks_scores_sku),
+                    )
+                    conn.commit()
+
+                    flash("Score updated successfully.", "success")
+                
+                else:
+                    flash("Error: Max score is zero or undefined.", "danger")
+                    return redirect(url_for("main.index"))
+
+            # Update the comment in the 'general_comments' table
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE general_comments
+                    SET comment = %s
+                    WHERE marks_scores_sku = %s
+                    """,
+                    (comment, marks_scores_sku),
+                )
+                conn.commit()
+
+                flash("Comment updated successfully.", "success")
+
+            # After saving the updated score and comment, redirect to the appropriate page
+            return redirect(url_for("student.manage_assess_students", student_id=request.form.get("student_id")))
+
+        # Fetch the record for pre-filling the form (GET request)
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT scores.*, aspect.aspect_name as aspect_name, assessment_criteria.criteria_name as criteria_name
+                FROM scores
+                INNER JOIN aspect ON scores.aspect_id = aspect.aspect_id
+                INNER JOIN assessment_criteria ON scores.criteria_id = assessment_criteria.criteria_id
+                WHERE scores.marks_scores_sku = %s
+                """,
+                (marks_scores_sku,)
+            )
+            record = cursor.fetchone()
+
+            if not record:
+                flash("Record not found.", "danger")
+                return redirect(url_for("main.index"))
+
+            # Fetch the general comment from the general_comments table
+            cursor.execute(
+                """
+                SELECT comment
+                FROM general_comments
+                WHERE marks_scores_sku = %s
+                """,
+                (marks_scores_sku,)
+            )
+            comment = cursor.fetchone()
+            general_comment = comment[0] if comment else ""
+
+        # Render the edit form with the existing data
+        return render_template("scores/edit_score.html", 
+                               username=session['username'], 
+                               role=session['role'], 
+                               record=record, 
+                               general_comment=general_comment, 
+                               marks_scores_sku=marks_scores_sku)
+
+    except Exception as e:
+        # Log the error with full traceback information
+        logging.exception(f"Error editing score for marks_scores_sku={marks_scores_sku}: {str(e)}")
+        flash(f"Error editing score: {str(e)}", "danger")
+        return redirect(url_for("main.index"))
+
+    finally:
+        conn.close()

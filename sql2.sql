@@ -252,3 +252,40 @@ ADD COLUMN marks_scores_sku VARCHAR(255) AFTER comment;
 
 ALTER TABLE general_comments
 ADD COLUMN marks_scores_sku VARCHAR(255) AFTER comment;
+
+
+
+
+
+
+CREATE TABLE databse_backups (
+    id INT AUTO_INCREMENT PRIMARY KEY,        -- Unique ID for each backup record
+    backup_file_name VARCHAR(255) NOT NULL,    -- File name of the backup
+    backup_file_path VARCHAR(255) NOT NULL,    -- Path where the backup file is stored
+    backup_date DATETIME NOT NULL,             -- Date and time when the backup was created
+    file_size INT,                             -- Size of the backup file in bytes
+    created_by VARCHAR(100),                   -- User who initiated the backup
+    backup_status ENUM('success', 'failed') DEFAULT 'success',  -- Status of the backup
+    description TEXT,                          -- Optional description or notes about the backup
+    FOREIGN KEY (created_by) REFERENCES users(username) ON DELETE SET NULL  -- Assuming you have a users table for tracking
+);
+
+
+
+CREATE TABLE databse_backups (
+    id INT AUTO_INCREMENT PRIMARY KEY,        -- Unique ID for each backup record
+    backup_file_name VARCHAR(255) NOT NULL,    -- File name of the backup
+    backup_file_path VARCHAR(255) NOT NULL,    -- Path where the backup file is stored
+    backup_date DATETIME NOT NULL,             -- Date and time when the backup was created
+    file_size INT,                             -- Size of the backup file in bytes
+    created_by VARCHAR(100),                   -- User who initiated the backup
+    backup_status ENUM('success', 'failed') DEFAULT 'success',  -- Status of the backup
+    description TEXT                         -- Optional description or notes about the backup
+    
+);
+
+
+
+ALTER TABLE database_buckups  RENAME TO database_backups;
+
+

@@ -1,0 +1,133 @@
+{% extends "layouts/assessor_base.html" %}
+
+{% block title %}Evaluation Summary{% endblock %}
+
+{% block body_class %}asssessor_sidebar-mini{% endblock %}
+
+{% block stylesheets %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+<link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
+<link rel="stylesheet" href="/static/assets/css/mine.css">
+<style>
+    /* Styling for form elements */
+    .form-group {
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alert-container">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                <strong>{{ message }}</strong>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Submit Scores and Comments</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('scores.save_scores') }}" method="POST">
+                        <!-- Student Selection -->
+                        <div class="form-group">
+                            <label for="student_teacher_id">Student</label>
+                            <select name="student_teacher_id" id="student_teacher_id" class="form-control" required>
+                                <!-- Assuming `students` is a list of students from your back-end -->
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Term Selection -->
+                        <div class="form-group">
+                            <label for="term_id">Term</label>
+                            <select name="term_id" id="term_id" class="form-control" required>
+                                {% for term in terms %}
+                                <option value="{{ term.id }}">{{ term.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- School Selection -->
+                        <div class="form-group">
+                            <label for="school_id">School</label>
+                            <select name="school_id" id="school_id" class="form-control" required>
+                                {% for school in schools %}
+                                <option value="{{ school.id }}">{{ school.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Aspect and Criteria Selection -->
+                        <div class="form-group">
+                            <label for="aspect_id">Aspect</label>
+                            <select name="aspect_id[]" id="aspect_id" class="form-control" multiple required>
+                                {% for aspect in aspects %}
+                                <option value="{{ aspect.id }}">{{ aspect.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="criteria_id">Criteria</label>
+                            <select name="criteria_id[]" id="criteria_id" class="form-control" multiple required>
+                                {% for criteria in criteria %}
+                                <option value="{{ criteria.id }}">{{ criteria.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Scores Input -->
+                        <div class="form-group">
+                            <label for="score">Scores</label>
+                            <input type="number" name="score[]" id="score" class="form-control" required>
+                        </div>
+
+                        <!-- General Comment -->
+                        <div class="form-group">
+                            <label for="comment">General Comment</label>
+                            <textarea name="comment" id="comment" class="form-control" rows="4" required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Submit Scores</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/plugins/jquery/jquery.min.js"></script>
+<script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/assets/js/adminlte.js"></script>
+<script src="/static/assets/js/mine.js"></script>
+
+<script>
+  $(document).ready(function() {
+    // Custom validation or functionality can be added here if needed
+  });
+</script>
+{% endblock javascripts %}

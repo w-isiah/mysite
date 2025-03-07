@@ -154,6 +154,12 @@
                                             <a href="{{ url_for('scores.view_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm">
                                                 <i class="icon-edit"></i> View Scores
                                             </a>
+
+                                            <a href="{{ url_for('scores.edit_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm">
+                                                <i class="icon-edit"></i> edit Scores
+                                            </a>
+
+
                                             {% elif student.status == 'Unassessed' %}
                                             <span class="badge badge-warning">Unassessed</span>
                                             <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
