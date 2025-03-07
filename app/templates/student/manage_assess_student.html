@@ -18,11 +18,10 @@
 <div class="content-wrapper">
     <div class="container-fluid">
 
-        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
         <div class="row mb-2">
             <div class="col-12">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
                 <div class="alert-container">
                     {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
@@ -33,12 +32,11 @@
                     </div>
                     {% endfor %}
                 </div>
-                {% endif %}
-                {% endwith %}
             </div>
         </div>
+        {% endif %}
+        {% endwith %}
 
-        <!-- Page Header -->
         <div class="content-header">
             <div class="row mb-2">
                 <div class="col-sm-6">
@@ -53,138 +51,119 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <section class="content">
             <div class="container-fluid">
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card card-info">
                             <div class="card-header">
-                                <h3 class="card-title">Manage Students</h3>
+                                <h3 class="card-title">Filter Students</h3>
                             </div>
                             <div class="card-body">
                                 <p class="mt-2">Use the filters below to narrow down the student list.</p>
-
                                 <form method="POST" class="form-inline">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                                    <!-- Programme Dropdown -->
                                     <div class="form-group mr-2">
                                         <label for="programme" class="mr-2">Programme:</label>
                                         <select name="programme" id="programme" class="form-control select2">
                                             <option value="" selected disabled="selected">Select Programme</option>
                                             {% for programme in programmes %}
-                                            <option value="{{ programme.id }}" 
-                                            {% if request.form.get('programme') == programme.id %} selected {% endif %}>
-                                            {{ programme.programme_name }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                                            <option value="{{ programme.id }}" {% if request.form.get('programme') == programme.id %} selected {% endif %}>
+                                                {{ programme.programme_name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
 
-                                <!-- Term Dropdown -->
-                                <div class="form-group mr-2">
-                                    <label for="term" class="mr-2">Term:</label>
-                                    <select name="term" id="term" class="form-control select2">
-                                        <option value="">Select Term</option>
-                                        {% for term in terms %}
-                                        <option value="{{ term.id }}" 
-                                        {% if request.form.get('term') == term.id %} selected {% endif %}>
-                                        {{ term.term }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
+                                    <div class="form-group mr-2">
+                                        <label for="term" class="mr-2">Term:</label>
+                                        <select name="term" id="term" class="form-control select2">
+                                            <option value="">Select Term</option>
+                                            {% for term in terms %}
+                                            <option value="{{ term.id }}" {% if request.form.get('term') == term.id %} selected {% endif %}>
+                                                {{ term.term }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group mr-2">
+                                        <label for="reg_no" class="mr-2">Reg No:</label>
+                                        <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No">
+                                    </div>
+
+                                    <button type="submit" class="btn btn-success">Search</button>
+                                </form>
                             </div>
-
-                            <!-- Reg No Input -->
-                            <div class="form-group mr-2">
-                                <label for="reg_no" class="mr-2">Reg No:</label>
-                                <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No">
-                            </div>
-
-                            <button type="submit" class="btn btn-success">Search</button>
-                        </form>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Students List Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Students List</h3>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="{{ url_for('assign_assessor.assign_assessor') }}">
-                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Students List</h3>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('assign_assessor.assign_assessor') }}">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                            <!-- Students Table -->
-                            <table id="example1" class="table table-bordered table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Reg No</th>
-                                        <th>Student Teacher</th>
-                                        <th>Semester</th>
-                                        <th>Subject</th>
-                                        <th>Programme</th>
-                                        <th>Assigned</th>
-                                        <th>Status</th> <!-- Status column -->
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for student in student_info %}
-                                    <tr>
-                                        <td>{{ student.reg_no }}</td>
-                                        <td>{{ student.student_teacher }}</td>
-                                        <td>{{ student.term_name }}</td>
-                                        <td>{{ student.subject }}</td>
-                                        <td>{{ student.programme_name }}</td>
-                                        <td>
-                                            {% if student.assigned %}
-                                            <span class="badge badge-success">{{ student.assessor_name }}</span>
-                                            {% else %}
-                                            <span class="badge badge-warning">Not Assigned</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if student.status == 'Assessed' %}
-                                            <span class="badge badge-success">Assessed</span> - {{ student.mark }}
-                                            <a href="{{ url_for('scores.view_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm">
-                                                <i class="icon-edit"></i> View Scores
-                                            </a>
-
-                                            <a href="{{ url_for('scores.edit_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm">
-                                                <i class="icon-edit"></i> edit Scores
-                                            </a>
-
-
-                                            {% elif student.status == 'Unassessed' %}
-                                            <span class="badge badge-warning">Unassessed</span>
-                                            <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
-                                                <i class="icon-edit"></i> Assess Now
-                                            </a>
-                                            {% else %}
-                                            <span class="badge badge-danger">Update Student Data</span>
-                                            <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm">
-                                                <i class="fas fa-edit"> Update </i>
-                                            </a>
-                                            {% endif %}
-                                        </td> <!-- Status column displaying mark or "Unassessed" -->
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </form>
+                                    <table id="example1" class="table table-bordered table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Reg No</th>
+                                                <th>Student Teacher</th>
+                                                <th>Semester</th>
+                                                <th>Subject</th>
+                                                <th>Programme</th>
+                                                <th>Assigned</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for student in student_info %}
+                                            <tr>
+                                                <td>{{ student.reg_no }}</td>
+                                                <td>{{ student.student_teacher }}</td>
+                                                <td>{{ student.term_name }}</td>
+                                                <td>{{ student.subject }}</td>
+                                                <td>{{ student.programme_name }}</td>
+                                                <td>
+                                                    {% if student.assigned %}
+                                                    <span class="badge badge-success">{{ student.assessor_name }}</span>
+                                                    {% else %}
+                                                    <span class="badge badge-warning">Not Assigned</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if student.status == 'Assessed' %}
+                                                    <span class="badge badge-success">Assessed</span> - {{ student.mark }}
+                                                    <a href="{{ url_for('scores.view_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm"><i class="icon-edit"></i> View Scores</a>
+                                                    <a href="{{ url_for('scores.edit_score', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm"><i class="icon-edit"></i> Edit Scores</a>
+                                                    {% elif student.status == 'Unassessed' %}
+                                                    <span class="badge badge-warning">Unassessed</span>
+                                                    <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm"><i class="icon-edit"></i> Assess Now</a>
+                                                    {% else %}
+                                                    <span class="badge badge-danger">Update Student Data</span>
+                                                    <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Update</a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
+            </div>
+        </section>
     </div>
-</section>
-</div>
 </div>
 {% endblock content %}
 
@@ -196,7 +175,6 @@
 <script src="/static/assets/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
 <script src="/static/assets/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
 <script src="/static/assets/js/adminlte.js"></script>
-<script src="/static/assets/js/mine.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 

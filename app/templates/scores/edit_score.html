@@ -1,131 +1,126 @@
 {% extends "layouts/moderator_base.html" %}
 
-{% block title %}Submit Scores{% endblock %}
+{% block title %}Edit Score{% endblock %}
 
 {% block body_class %}moderator_sidebar-mini{% endblock %}
 
 {% block stylesheets %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
-<link rel="stylesheet" href="/static/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet" href="/static/assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="/static/assets/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/select2/css/select2.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+<link rel="stylesheet" href="/static/assets/plugins/bootstrap4-duallistbox/bootstrap-duallistbox.min.css">
 <link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
 <link rel="stylesheet" href="/static/assets/css/mine.css">
-<style>
-    /* Styling for form elements */
-    .form-group {
-        margin-bottom: 15px;
-    }
-</style>
-{% endblock stylesheets %}
+{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
     <div class="container-fluid">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="alert-container">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                <strong>{{ message }}</strong>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+        <div class="row mb-2">
+            <div class="col-12">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <strong>{{ message }}</strong>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
             </div>
-            {% endfor %}
         </div>
-        {% endif %}
-        {% endwith %}
+
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Edit Score</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                            <li class="breadcrumb-item active">Edit Score</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h3 class="card-title">Edit Score</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                {% if record %}
+                                <form action="" method="POST">
+                                    {% for related_record in record %}
+                                    <div class="form-group">
+                                        <label for="score">Score</label>
+                                        <input type="text" class="form-control" id="score" name="score" value="{{ related_record.score_mark }}" required>
+                                    </div>
+
+                                  
+
+                                    <div class="form-group">
+                                        <label for="aspect_name">Aspect</label>
+                                        <input type="text" class="form-control" id="aspect_name" value="{{ related_record.aspect_name }} {{related_record.aspect_description}}" disabled>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="criteria_name">Assessment Criteria</label>
+                                        <input type="text" class="form-control" id="criteria_name" value="{{ related_record.criteria_name }}" disabled>
+                                    </div>
+                                    {% endfor %}
+
+                                    <button type="submit" class="btn btn-primary">Update Score</button>
+                                    <a href="" class="btn btn-secondary">Cancel</a>
+                                </form>
+                                {% else %}
+                                <p>No score record found.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
-
-    <section class="content">
-        <div class="container-fluid">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Submit Scores and Comments</h3>
-                </div>
-                <div class="card-body">
-                    <form action="{{ url_for('scores.save_scores') }}" method="POST">
-                        <!-- Student Selection -->
-                        <div class="form-group">
-                            <label for="student_teacher_id">Student</label>
-                            <select name="student_teacher_id" id="student_teacher_id" class="form-control" required>
-                                <!-- Assuming `students` is a list of students from your back-end -->
-                                {% for student in students %}
-                                <option value="{{ student.id }}">{{ student.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Term Selection -->
-                        <div class="form-group">
-                            <label for="term_id">Term</label>
-                            <select name="term_id" id="term_id" class="form-control" required>
-                                {% for term in terms %}
-                                <option value="{{ term.id }}">{{ term.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- School Selection -->
-                        <div class="form-group">
-                            <label for="school_id">School</label>
-                            <select name="school_id" id="school_id" class="form-control" required>
-                                {% for school in schools %}
-                                <option value="{{ school.id }}">{{ school.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Aspect and Criteria Selection -->
-                        <div class="form-group">
-                            <label for="aspect_id">Aspect</label>
-                            <select name="aspect_id[]" id="aspect_id" class="form-control" multiple required>
-                                {% for aspect in aspects %}
-                                <option value="{{ aspect.id }}">{{ aspect.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="criteria_id">Criteria</label>
-                            <select name="criteria_id[]" id="criteria_id" class="form-control" multiple required>
-                                {% for criteria in criteria %}
-                                <option value="{{ criteria.id }}">{{ criteria.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Scores Input -->
-                        <div class="form-group">
-                            <label for="score">Scores</label>
-                            <input type="number" name="score[]" id="score" class="form-control" required>
-                        </div>
-
-                        <!-- General Comment -->
-                        <div class="form-group">
-                            <label for="comment">General Comment</label>
-                            <textarea name="comment" id="comment" class="form-control" rows="4" required></textarea>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">Submit Scores</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </section>
 </div>
-{% endblock content %}
+{% endblock %}
 
 {% block javascripts %}
 <script src="/static/assets/plugins/jquery/jquery.min.js"></script>
 <script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/static/assets/js/adminlte.js"></script>
+<script src="/static/assets/plugins/select2/js/select2.full.min.js"></script>
+<script src="/static/assets/plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
+<script src="/static/assets/plugins/moment/moment.min.js"></script>
+<script src="/static/assets/plugins/inputmask/jquery.inputmask.min.js"></script>
+<script src="/static/assets/plugins/daterangepicker/daterangepicker.js"></script>
+<script src="/static/assets/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
+<script src="/static/assets/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
+<script src="/static/assets/plugins/bootstrap-switch/js/bootstrap-switch.min.js"></script>
+<script src="/static/assets/js/adminlte.min.js"></script>
+<script src="/static/assets/js/demo.js"></script>
+<script src="/static/assets/js/pages/dashboard.js"></script>
 <script src="/static/assets/js/mine.js"></script>
 
 <script>
-  $(document).ready(function() {
-    // Custom validation or functionality can be added here if needed
-  });
+    $(function () {
+        $('.select2').select2();
+    });
 </script>
-{% endblock javascripts %}
+{% endblock %}

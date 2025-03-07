@@ -85,6 +85,17 @@
                         {% endif %}
                     </div>
 
+                    <div class="general-comment">
+                        <strong>Mark  </strong> 
+                        {% if comment %}
+                             <strong> {{ mark_score.marks }}% </strong>
+                        {% else %}
+                            <span class="no-comment">No Mark available.</span>
+                        {% endif %}
+                    </div>
+
+
+
                     <!-- Scores table -->
                     <table id="example1" class="table table-bordered table-striped table-hover">
                         <thead>

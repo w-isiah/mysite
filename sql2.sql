@@ -272,7 +272,7 @@ CREATE TABLE databse_backups (
 
 
 
-CREATE TABLE databse_backups (
+CREATE TABLE database_backups (
     id INT AUTO_INCREMENT PRIMARY KEY,        -- Unique ID for each backup record
     backup_file_name VARCHAR(255) NOT NULL,    -- File name of the backup
     backup_file_path VARCHAR(255) NOT NULL,    -- Path where the backup file is stored

@@ -45,167 +45,154 @@
 
 {% block content %}
 <div class="content-wrapper">
-  <div class="container-fluid">
-    <!-- Flash Messages -->
-    <div id="flashMessagesContainer" class="flash-messages-container">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-      <div class="flash-messages">
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show flash-message" role="alert">
-          <div class="d-flex justify-content-between">
-            <strong>{{ message }}</strong>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-      {% endwith %}
-    </div>
+    <div class="container-fluid">
 
-    <!-- Content Header Section -->
-    <div class="content-header">
-      <div class="container-fluid">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
         <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark">Dashboard</h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{{url_for('main.index')}}">Home</a></li>
-              <li class="breadcrumb-item active">View Students</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content Section -->
-    <section class="content">
-      <div class="container-fluid">
-
-        <!-- Manage Students Card -->
-        <div class="row">
-          <div class="col-md-12">
-            <div class="card card-info">
-              <div class="card-header">
-                <h3 class="card-title">Manage Students</h3>
-              </div>
-              <div class="card-body">
-
-
-
-                <p class="mt-2">You can add, edit, or delete students from the table below.</p>
-
-                <!-- Search Form -->
-                <form method="POST" class="form-inline">
-                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
-                  <!-- Programme Dropdown -->
-                  <div class="form-group mr-2">
-                    <label for="programme" class="mr-2">Programme:</label>
-                    <select name="programme" id="programme" class="form-control">
-                      <option value="">Select Programme</option>
-                      {% for programme in programmes %}
-                      <option value="{{ programme.id }}" {% if request.form.get('programme') == programme.id %} selected {% endif %}>
-                        {{ programme.programme_name }}
-                      </option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <!-- Term Dropdown -->
-                  <div class="form-group mr-2">
-                    <label for="term" class="mr-2">Term:</label>
-                    <select name="term" id="term" class="form-control">
-                      <option value="">Select Term</option>
-                      {% for term in terms %}
-                      <option value="{{ term.id }}" {% if request.form.get('term') == term.id %} selected {% endif %}>
-                        {{ term.term }}
-                      </option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <!-- Reg No Input -->
-                  <div class="form-group mr-2">
-                    <label for="reg_no" class="mr-2">Reg No:</label>
-                    <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No">
-                  </div>
-
-                  <button type="submit" class="btn btn-success">Search</button>
-                </form>
-              </div>
+            <div class="col-12">
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <strong>{{ message }}</strong>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="content-header">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 text-dark">Manage Students</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                        <li class="breadcrumb-item active">Students</li>
+                    </ol>
+                </div>
+            </div>
         </div>
 
-        <!-- Students List Table -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Students List</h3>
-              </div>
-              <div class="card-body">
-               <table id="example" class="stripe row-border order-column" style="width:100%">
-                <thead>
-                  <tr>
-                   <th>Reg No</th>
-                   <th>Student Teacher</th>
-                   <th>Term</th>
-                   <th>Subject</th>
-                   
-                   <th>Class Name</th>
-                   <th>Topic</th>
-                   <th>Subtopic</th>
-                   <th>Teaching Time</th>
-                   <th>Programme</th>
-                   <th>Actions</th>
-                 </tr>
-               </thead>
-               <tbody>
-                {% for student in student_info %}
-                <tr>
-                  <td>{{ student.reg_no }}</td>
-                  <td>{{ student.student_teacher }}</td>
-                  <td>{{ student.term }}</td>
-                  <td>{{ student.subject }}</td>
+        <section class="content">
+            <div class="container-fluid">
 
-                  <td>{{ student.class_name }}</td>
-                  <td>{{ student.topic }}</td>
-                  <td>{{ student.subtopic }}</td>
-                  <td>{{ student.teaching_time }}</td>
-                  <td>{{ student.programme_name }}</small></td>
-                  <td>
-                    <div class="btn-group" role="group">
-                     
-                     <a href="{{ url_for('student.register_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" title="Register Student">
-                      <i class="fas fa-edit"></i> Register
-                    </a>
-                    
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">Filter Students</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="mt-2">Use the filters below to narrow down the student list.</p>
+                                <form method="POST" class="form-inline">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                    <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" title="Edit Student">
-                      <i class="fas fa-edit"></i> Edit
-                    </a>
+                                    <div class="form-group mr-2">
+                                        <label for="programme" class="mr-2">Programme:</label>
+                                        <select name="programme" id="programme" class="form-control select2">
+                                            <option value="" selected disabled="selected">Select Programme</option>
+                                            {% for programme in programmes %}
+                                            <option value="{{ programme.id }}" {% if request.form.get('programme') == programme.id %} selected {% endif %}>
+                                                {{ programme.programme_name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
 
+                                    <div class="form-group mr-2">
+                                        <label for="term" class="mr-2">Term:</label>
+                                        <select name="term" id="term" class="form-control select2">
+                                            <option value="">Select Term</option>
+                                            {% for term in terms %}
+                                            <option value="{{ term.id }}" {% if request.form.get('term') == term.id %} selected {% endif %}>
+                                                {{ term.term }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
 
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                                    <div class="form-group mr-2">
+                                        <label for="reg_no" class="mr-2">Reg No:</label>
+                                        <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No">
+                                    </div>
+
+                                    <button type="submit" class="btn btn-success">Search</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Students List</h3>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('assign_assessor.assign_assessor') }}">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                                    <table id="example1" class="table table-bordered table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Reg No</th>
+                                                <th>Student Teacher</th>
+                                                <th>Semester</th>
+                                                <th>Subject</th>
+                                                <th>Programme</th>
+                                                <th>Assigned</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for student in student_info %}
+                                            <tr>
+                                                <td>{{ student.reg_no }}</td>
+                                                <td>{{ student.student_teacher }}</td>
+                                                <td>{{ student.term_name }}</td>
+                                                <td>{{ student.subject }}</td>
+                                                <td>{{ student.programme_name }}</td>
+                                                <td>
+                                                    {% if student.assigned %}
+                                                    <span class="badge badge-success">{{ student.assessor_name }}</span>
+                                                    {% else %}
+                                                    <span class="badge badge-warning">Not Assigned</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if student.status == 'Assessed' %}
+                                                    <span class="badge badge-success">Assessed</span> - {{ student.mark }}
+                                                    <a href="{{ url_for('scores.view_scores', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm"><i class="icon-edit"></i> View Scores</a>
+                                                    <a href="{{ url_for('scores.edit_score', marks_scores_sku=student.marks_scores_sku) }}" class="btn btn-warning btn-sm"><i class="icon-edit"></i> Edit Scores</a>
+                                                    {% elif student.status == 'Unassessed' %}
+                                                    <span class="badge badge-warning">Unassessed</span>
+                                                    <a href="{{ url_for('assessment.assess_v1', student_id=student.student_id) }}" class="btn btn-warning btn-sm"><i class="icon-edit"></i> Assess Now</a>
+                                                    {% else %}
+                                                    <span class="badge badge-danger">Update Student Data</span>
+                                                    <a href="{{ url_for('student.a_edit_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Update</a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
     </div>
-  </div>
-
-</div>
-</section>
 </div>
 {% endblock content %}
 

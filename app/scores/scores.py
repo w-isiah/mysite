@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 from flask import session, flash, redirect, url_for, render_template, request
 import logging
+logging.basicConfig(level=logging.INFO)
 
 import random
 
@@ -153,6 +154,12 @@ def view_scores(marks_scores_sku):
 
 
 
+
+        cursor.execute("SELECT marks FROM  marks WHERE marks_scores_sku = %s", (marks_scores_sku,))
+        mark_score = cursor.fetchone()
+
+
+
         if not saved_data:
             flash("No data found for this marks_scores_sku.", "warning")
             return redirect(url_for("main.index"))
@@ -164,13 +171,15 @@ def view_scores(marks_scores_sku):
             return render_template("scores/evaluation_summary.html", 
                                    username=session['username'], 
                                    role=session['role'],
+                                   mark_score=mark_score,
                                    comment=comment, 
                                    saved_data=saved_data, 
                                    marks_scores_sku=marks_scores_sku)
         elif role0 == "School Practice Supervisor":
             return render_template("scores/assessor/evaluation_summary.html", 
                                    username=session['username'], 
-                                   role=session['role'], 
+                                   role=session['role'],
+                                   mark_score=mark_score, 
                                    comment=comment, 
                                    saved_data=saved_data, 
                                    marks_scores_sku=marks_scores_sku)
@@ -194,219 +203,175 @@ def view_scores(marks_scores_sku):
 
 
 
-@scores_bp.route("/old_edit_score/<string:marks_scores_sku>", methods=["GET", "POST"])
-def old_edit_score(marks_scores_sku):
-    conn = get_db_connection()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@scores_bp.route("/edit_score/<string:marks_scores_sku>", methods=["GET", "POST"])
+def edit_score(marks_scores_sku):
+    """Handles editing a score and comment."""
+    
+    # Check if the user is logged in
+    if "id" not in session:
+        return jsonify({"error": "You must be logged in to view score data."}), 401
+
+    conn = None  # Initialize conn to None
+    cursor = None  # Initialize cursor to None
     try:
-        if request.method == "POST":
-            # Handle form submission
-            score = request.form.get("score")
-            comment = request.form.get("comment")
+        # Establish DB connection
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-            # Validate input
-            try:
-                score = float(score)
-            except ValueError:
-                flash("Invalid score. Please enter a numeric value.", "danger")
-                return redirect(url_for("edit_score", score_id=score_id))
+        # Log the received SKU value
+        logging.info(f'Received marks_scores_sku: {marks_scores_sku}')
 
-            if len(comment) > 255:
-                flash("Comment is too long. Maximum 255 characters allowed.", "danger")
-                return redirect(url_for("scores.edit_score", score_id=score_id))
+        # Handle the GET request: Fetch the existing score data
+        if request.method == "GET":
+            cursor.execute("""
+                SELECT
+                    s.score AS score_mark,
+                    a.aspect_name,
+                    ac.criteria_name,
+                    ac.criteria_id AS criteria_id,
+                    a.description AS aspect_description
+                FROM
+                    scores s
+                JOIN
+                    aspect a ON s.aspect_id = a.aspect_id
+                JOIN
+                    assessment_criteria ac ON s.criteria_id = ac.criteria_id
+                WHERE
+                    s.marks_scores_sku = %s;
+            """, (marks_scores_sku,))
 
-            # Update the database
-            with conn.cursor(dictionary=True) as cursor:
-                cursor.execute(
-                    """
-                    UPDATE scores
-                    SET score = %s, comment = %s
-                    WHERE id = %s
-                    """,
-                    (score, comment, score_id),
+            # Fetch all matching records
+            records = cursor.fetchall()
+
+            # Fetch existing comment
+            cursor.execute("SELECT comment FROM  general_comments WHERE marks_scores_sku = %s", (marks_scores_sku,))
+            comment = cursor.fetchone()
+
+
+            cursor.execute("SELECT marks FROM  marks WHERE marks_scores_sku = %s", (marks_scores_sku,))
+            mark_score = cursor.fetchone()
+
+            # Check if records were found
+            if records:
+                # Pass all records to the template
+                return render_template(
+                    "scores/assessor/edit_score.html",
+                    username=session.get("username"),
+                    comment=comment,
+                    marks_scores_sku=marks_scores_sku,
+                    role=session.get("role"),
+                    record=records,  # Send the records to the form
+                    mark_score=mark_score,
+                    related_records=records  # Send the related records for loops in HTML
                 )
-                conn.commit()
-                flash("Score updated successfully.", "success")
-                return redirect(url_for("student_data", student_id=request.form.get("student_id")))
+            else:
+                # Handle the case where the record does not exist
+                logging.warning(f"No records found for marks_scores_sku: {marks_scores_sku}")
+                return "Record not found", 404
 
-        # Fetch the record for pre-filling the form
-        with conn.cursor(dictionary=True) as cursor:
-            cursor.execute(
-                """
-                SELECT scores.*, aspect.aspect_name as aspect_name, assessment_criteria.criteria_name as criteria_name
-                FROM scores
-                INNER JOIN aspect ON scores.aspect_id = aspect.aspect_id
-                INNER JOIN assessment_criteria ON scores.criteria_id = assessment_criteria.criteria_id
-                WHERE scores.id = %s
-                """,
-                (score_id,),
-            )
-            record = cursor.fetchone()
-            if not record:
-                flash("Record not found.", "danger")
-                return redirect(url_for("main.index"))
+        # Handle the POST request: Update the score in the database
+        elif request.method == "POST":
+            # Get the list of criteria_ids and the new scores from the form
+            criteria_ids = request.form.getlist("criteria_id[]")
+            scores = request.form.getlist("score[]")
+            comment = request.form.get('comment')
 
-        return render_template("scores/edit_score.html", username=session['username'], role=session['role'],record=record)
+            # Ensure there is a match between criteria and scores
+            if len(criteria_ids) != len(scores):
+                return jsonify({"error": "Mismatch between criteria IDs and scores."}), 400
 
-    except Exception as e:
-        flash(f"Error editing score: {str(e)}", "danger")
-        return redirect(url_for("main.index"))
-
-    finally:
-        conn.close()
-
-
-
-
-
-
-
-
-
-@scores_bp.route("/edit_scores/<string:marks_scores_sku>", methods=["GET", "POST"])
-def edit_scores(marks_scores_sku):
-    conn = get_db_connection()
-
-    try:
-        if request.method == "POST":
-            # Handle form submission
-            score = request.form.get("score")
-            comment = request.form.get("comment")
-
-            # Validate score input
+            # Convert scores to float and calculate the total score
             try:
-                score = float(score)
+                scores_float = [float(score) for score in scores]
+                total_score = sum(scores_float)
             except ValueError:
-                flash("Invalid score. Please enter a numeric value.", "danger")
-                return redirect(url_for("scores.edit_scores", marks_scores_sku=marks_scores_sku))
+                return jsonify({"error": "Invalid score format."}), 400
 
-            if len(comment) > 255:
-                flash("Comment is too long. Maximum 255 characters allowed.", "danger")
-                return redirect(url_for("scores.edit_scores", marks_scores_sku=marks_scores_sku))
+            # Calculate the maximum score (5 * number of criteria)
+            max_score = 5 * len(criteria_ids)
 
-            # Update the score in the 'scores' table for the given marks_scores_sku
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
+            # Calculate the total percentage
+            if max_score > 0:
+                total_percentage = (total_score / max_score) * 100
+                total_percentage = round(min(total_percentage, 100), 2)  # Ensure max is 100%
+            else:
+                total_percentage = 0
+
+            # Update scores in the database for each criteria
+            for criteria_id, score in zip(criteria_ids, scores):
+                cursor.execute("""
                     UPDATE scores
                     SET score = %s
-                    WHERE marks_scores_sku = %s
-                    """,
-                    (score, marks_scores_sku),
-                )
-                
-                # Recalculate the total score based on all the related records in the 'scores' table
-                cursor.execute(
-                    """
-                    SELECT SUM(score) AS total_score
-                    FROM scores
-                    WHERE marks_scores_sku = %s
-                    """,
-                    (marks_scores_sku,)
-                )
-                result = cursor.fetchone()
+                    WHERE marks_scores_sku = %s AND criteria_id = %s;
+                """, (score, marks_scores_sku, criteria_id))
 
-                if not result or result['total_score'] is None:
-                    flash("Error recalculating total score.", "danger")
-                    return redirect(url_for("main.index"))
+            # Update the marks table with the total percentage
+            cursor.execute("""
+                UPDATE marks
+                SET marks = %s
+                WHERE marks_scores_sku = %s;
+            """, (total_percentage, marks_scores_sku))
 
-                total_score = result['total_score']
-                print(f"Recalculated total score: {total_score}")
+            # Update the comment in the general_comments table
+            cursor.execute("UPDATE general_comments SET comment = %s WHERE marks_scores_sku = %s", (comment, marks_scores_sku))
 
-                # Calculate the max possible score for this set of scores
-                cursor.execute(
-                    """
-                    SELECT COUNT(*) AS total_criteria
-                    FROM scores
-                    WHERE marks_scores_sku = %s
-                    """,
-                    (marks_scores_sku,)
-                )
-                criteria_count = cursor.fetchone()['total_criteria']
-                
-                max_score = 5 * criteria_count  # Assume max score is 5 for each criterion
-                print(f"Max score: {max_score}")
+            # Commit the changes to the database
+            conn.commit()
 
-                if max_score > 0:
-                    total_percentage = (total_score / max_score) * 100
-                    total_percentage = round(min(total_percentage, 100), 0)  # Ensure it's capped at 100%
+            # Provide feedback to the user
+            flash("Scores and total percentage updated successfully!", "success")
 
-                    # Update the marks table with the new total score
-                    cursor.execute(
-                        """
-                        UPDATE marks
-                        SET marks = %s, assessment_type = 'system', date_awarded = CURDATE()
-                        WHERE marks_scores_sku = %s
-                        """,
-                        (total_percentage, marks_scores_sku),
-                    )
-                    conn.commit()
+            # Redirect to a page where the user can view the updated score
+            return redirect(url_for('scores.view_scores', marks_scores_sku=marks_scores_sku))
 
-                    flash("Score updated successfully.", "success")
-                
-                else:
-                    flash("Error: Max score is zero or undefined.", "danger")
-                    return redirect(url_for("main.index"))
-
-            # Update the comment in the 'general_comments' table
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    UPDATE general_comments
-                    SET comment = %s
-                    WHERE marks_scores_sku = %s
-                    """,
-                    (comment, marks_scores_sku),
-                )
-                conn.commit()
-
-                flash("Comment updated successfully.", "success")
-
-            # After saving the updated score and comment, redirect to the appropriate page
-            return redirect(url_for("student.manage_assess_students", student_id=request.form.get("student_id")))
-
-        # Fetch the record for pre-filling the form (GET request)
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT scores.*, aspect.aspect_name as aspect_name, assessment_criteria.criteria_name as criteria_name
-                FROM scores
-                INNER JOIN aspect ON scores.aspect_id = aspect.aspect_id
-                INNER JOIN assessment_criteria ON scores.criteria_id = assessment_criteria.criteria_id
-                WHERE scores.marks_scores_sku = %s
-                """,
-                (marks_scores_sku,)
-            )
-            record = cursor.fetchone()
-
-            if not record:
-                flash("Record not found.", "danger")
-                return redirect(url_for("main.index"))
-
-            # Fetch the general comment from the general_comments table
-            cursor.execute(
-                """
-                SELECT comment
-                FROM general_comments
-                WHERE marks_scores_sku = %s
-                """,
-                (marks_scores_sku,)
-            )
-            comment = cursor.fetchone()
-            general_comment = comment[0] if comment else ""
-
-        # Render the edit form with the existing data
-        return render_template("scores/edit_score.html", 
-                               username=session['username'], 
-                               role=session['role'], 
-                               record=record, 
-                               general_comment=general_comment, 
-                               marks_scores_sku=marks_scores_sku)
+    except mysql.connector.Error as err:
+        # Handle MySQL-specific errors and log them
+        logging.error(f"MySQL error: {err}")
+        return jsonify({"error": f"MySQL error: {err}"}), 500
 
     except Exception as e:
-        # Log the error with full traceback information
-        logging.exception(f"Error editing score for marks_scores_sku={marks_scores_sku}: {str(e)}")
-        flash(f"Error editing score: {str(e)}", "danger")
-        return redirect(url_for("main.index"))
+        # Handle any other unexpected errors and log them with full exception details
+        logging.exception(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
 
     finally:
-        conn.close()
+        # Ensure the cursor and connection are closed properly
+        if cursor:  # Add a check to make sure the cursor exists.
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+            logging.info("Database connection closed.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
