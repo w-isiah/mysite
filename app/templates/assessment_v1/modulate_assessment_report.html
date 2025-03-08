@@ -70,7 +70,7 @@
       <div class="col-md-12">
         <div class="card card-info">
           <div class="card-header">
-            <h3 class="card-title">Modulate Assessment Data (Report)</h3>
+            <h3 class="card-title">Modurate Assessment Data (Report)</h3>
           </div>
           <div class="card-body">
             <div class="d-flex flex-wrap mb-4">
@@ -90,9 +90,9 @@
                 </div>
 
                 <div class="form-group mr-2">
-                  <label for="term" class="mr-2">Term:</label>
+                  <label for="term" class="mr-2">Semester:</label>
                   <select name="term_id" id="term" class="form-control select2" required>
-                    <option value="">Select Term</option>
+                    <option value="">Select a Semester</option>
                     {% for term in terms %}
                       <option value="{{ term.id }}" {% if term.id == term_id %} selected {% endif %}>
                         {{ term.term }}
@@ -130,7 +130,7 @@
                     <th class="fixed-column">Student Name</th>
                     <th>Reg No</th>
                     <th>Subject</th>
-                    <th>Term</th>
+                    <th>Semester</th>
 
                     {% for assessor in assessors %}
                       <th>{{ assessor }}</th>

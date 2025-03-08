@@ -90,9 +90,9 @@
                 </div>
 
                 <div class="form-group mr-2">
-                  <label for="term" class="mr-2">Term:</label>
+                  <label for="term" class="mr-2">Semester:</label>
                   <select name="term_id" id="term" class="form-control select2" required>
-                    <option value="">Select Term</option>
+                    <option value="">Select Semester</option>
                     {% for term in terms %}
                     <option value="{{ term.id }}" {% if term.id == term_id %} selected {% endif %}>
                       {{ term.term }}
@@ -184,14 +184,8 @@
       scrollY: 300
     });
 
-    // Enable export button if data exists
-    function checkTableData() {
-      // Check if there are any rows in the table body and enable the button if there are
-      $('#exportExcelButton').prop('disabled', $("#example tbody tr").length === 0);
-    }
+  
 
-    // Call checkTableData after the table is initialized and populated
-    checkTableData();
 
     // Enable export button when clicked
     $('#exportExcelButton').click(function (e) {

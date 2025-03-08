@@ -322,14 +322,32 @@
               <p>View Students</p>
             </a>
           </li>
-          <li class="nav-item">
-            <a href="{{ url_for('student.add_student') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>Add Student</p>
-            </a>
-          </li>
+         
         </ul>
       </li>
+
+
+       <!-- Assign Assessor -->
+      <li class="nav-item has-treeview">
+        <a href="#" class="nav-link">
+          <i class="nav-icon fas fa-user-tag"></i>
+          <p>
+            Un_Assign Assessor
+            <i class="right fas fa-angle-left"></i>
+          </p>
+        </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item">
+            <a href="{{ url_for('assign_assessor.un_assign_manage_students') }}" class="nav-link">
+              <i class="far fa-circle nav-icon"></i>
+              <p>View Students</p>
+            </a>
+          </li>
+         
+        </ul>
+      </li>
+
+
 
 
 
