@@ -128,12 +128,12 @@
                                             <tr>
                                                 <td>{{ student.reg_no }}</td>
                                                 <td>{{ student.student_teacher }}</td>
-                                                <td>{{ student.term_name }}</td>
+                                                <td>{{ student.term }}</td> <!-- Updated to show term directly -->
                                                 <td>{{ student.subject }}</td>
                                                 <td>{{ student.programme_name }}</td>
                                                 <td>
                                                     {% if student.assigned %}
-                                                    <span class="badge badge-success">{{ student.assessor_name }}</span>
+                                                    <span class="badge badge-success">Assigned</span>
                                                     {% else %}
                                                     <span class="badge badge-warning">Not Assigned</span>
                                                     {% endif %}

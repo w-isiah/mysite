@@ -274,15 +274,28 @@ def edit_score(marks_scores_sku):
             # Check if records were found
             if records:
                 # Pass all records to the template
-                return render_template(
-                    "scores/assessor/edit_score.html",
-                    username=session.get("username"),
-                    comment=comment,
-                    marks_scores_sku=marks_scores_sku,
-                    role=session.get("role"),
-                    record=records,  # Send the records to the form
-                    mark_score=mark_score,
-                    related_records=records  # Send the related records for loops in HTML
+                role=session.get("role")
+                if role == "School Practice Supervisor":
+                    return render_template(
+                        "scores/assessor/edit_score.html",
+                        username=session.get("username"),
+                        comment=comment,
+                        marks_scores_sku=marks_scores_sku,
+                        role=session.get("role"),
+                        record=records,  # Send the records to the form
+                        mark_score=mark_score,
+                        related_records=records  # Send the related records for loops in HTML
+                        )
+                else:
+                    return render_template(
+                        "scores/edit_score.html",
+                        username=session.get("username"),
+                        comment=comment,
+                        marks_scores_sku=marks_scores_sku,
+                        role=session.get("role"),
+                        record=records,  # Send the records to the form
+                        mark_score=mark_score,
+                        related_records=records  # Sen
                 )
             else:
                 # Handle the case where the record does not exist
@@ -375,3 +388,38 @@ def edit_score(marks_scores_sku):
 
 
 
+
+
+@scores_bp.route("/delete_scores/<string:marks_scores_sku>", methods=["GET", "POST"])
+def delete_scores(marks_scores_sku):
+    if "id" not in session:
+        flash("You must be logged in to delete scores.", "danger")
+        return redirect(url_for("auth.login"))
+
+    try:
+        # Establish database connection using 'with' to ensure proper closure
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            
+
+            # Delete from scores table
+            cursor.execute("DELETE FROM scores WHERE marks_scores_sku = %s", (marks_scores_sku,))
+
+            # Delete from general_comments table
+            cursor.execute("DELETE FROM general_comments WHERE marks_scores_sku = %s", (marks_scores_sku,))
+
+            # Delete from marks table
+            cursor.execute("DELETE FROM marks WHERE marks_scores_sku = %s", (marks_scores_sku,))
+
+            # Commit the transaction
+            conn.commit()
+
+        flash("Scores and related data successfully deleted.", "success")
+        return redirect(url_for("main.index"))
+
+    except Exception as e:
+        # Log the error with detailed message
+        logging.error(f"An error occurred while deleting scores for {marks_scores_sku}: {str(e)}")
+        flash(f"An error occurred while deleting scores: {str(e)}", "danger")
+        return redirect(url_for("main.index"))

@@ -221,6 +221,37 @@
 
 
 
+         <!-- Assessment -->
+        <li class="nav-item has-treeview">
+          <a href="#" class="nav-link">
+            <i class="nav-icon fas fa-pencil-alt"></i>
+            <p>
+              Results
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ url_for('student.moderator_manage_assess_students') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>View Results</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ url_for('assessment.check_student') }}" class="nav-link">
+                <i class="far fa-circle nav-icon"></i>
+                <p>Assess A Student</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+
+
+
+
+
+
 
         <!-- Moderate -->
         <li class="nav-item has-treeview">

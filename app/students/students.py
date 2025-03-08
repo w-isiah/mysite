@@ -985,6 +985,151 @@ def manage_assess_students():
 
 
 
+@student_bp.route('/moderator_manage_assess_students', methods=['GET', 'POST'])
+def moderator_manage_assess_students():
+    try:
+        # Ensure the session has a valid assessor id
+        if 'id' not in session:
+            flash('You must be logged in to access this page', 'danger')
+            return redirect(url_for('auth.login'))
+
+        # Database connection and fetching programmes and terms
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Fetch programmes and terms
+        programmes, terms = fetch_programmes_and_terms()
+
+        # Fetch assessors
+        assessors_query = """
+            SELECT id, username FROM users WHERE role NOT IN ('admin', 'Head of Department')
+        """
+        cursor.execute(assessors_query)
+        assessors = cursor.fetchall()
+
+        # Base query for student information, modified to include assessor filter if given
+        query = """
+            SELECT 
+                si.id AS student_id,
+                si.student_teacher,  
+                si.reg_no, 
+                si.subject,
+                si.class_name, 
+                si.topic, 
+                si.subtopic, 
+                si.teaching_time,
+                p.programme_name, 
+                p.description AS programme_description,
+                t.term AS term,
+                a.assessor_id IS NOT NULL AS assigned,
+                u.username AS assessor_name,
+                si.term_id AS term_id
+            FROM student_info si
+            LEFT JOIN programmes p ON si.programme_id = p.id
+            LEFT JOIN terms t ON si.term_id = t.id
+            LEFT JOIN assign_assessor a ON si.id = a.student_id
+            LEFT JOIN users u ON a.assessor_id = u.id
+        """
+
+        # Prepare params for filtering
+        params = []
+
+        # If it's a POST request, add filters to the query
+        if request.method == 'POST':
+            conditions = []
+            if programme := request.form.get('programme'):
+                conditions.append("si.programme_id = %s")
+                params.append(programme)
+            
+            if term := request.form.get('term'):
+                conditions.append("si.term_id = %s")
+                params.append(term)
+
+            if reg_no := request.form.get('reg_no'):
+                conditions.append("si.reg_no LIKE %s")
+                params.append(f"%{reg_no}%")
+            
+            if assessor := request.form.get('assessor'):
+                conditions.append("a.assessor_id = %s")
+                params.append(assessor)
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+        # Execute query to fetch students based on filtering
+        cursor.execute(query, params)
+        student_info = cursor.fetchall()
+
+        # For each student, check if a mark exists for the same term_id in the marks table
+        for student in student_info:
+            term_id = student['term_id']
+            student_id = student['student_id']
+
+            # Query to check if the student has a mark for the same term_id by this specific assessor
+            mark_query = """
+                SELECT marks, marks_scores_sku
+                FROM marks 
+                WHERE student_id = %s AND term_id = %s 
+                LIMIT 1
+            """
+            cursor.execute(mark_query, (student_id, term_id))
+            mark_result = cursor.fetchone()
+
+            if mark_result:
+                student['status'] = 'Assessed'
+                student['mark'] = mark_result['marks']
+                student['marks_scores_sku'] = mark_result['marks_scores_sku']
+            else:
+                required_fields = ['term', 'programme_name', 'class_name', 'reg_no', 'subject', 'topic', 'subtopic', 'teaching_time']
+                missing_fields = [field for field in required_fields if not student.get(field)]
+
+                if missing_fields:
+                    student['status'] = 'Update Student Data'
+                    student['mark'] = None
+                else:
+                    student['status'] = 'Unassessed'
+                    student['mark'] = None
+                    student['marks_scores_sku'] = None
+
+        cursor.close()
+        conn.close()
+
+        return render_template('student/moderator_manage_assess_student.html', 
+                               username=session['username'], 
+                               role=session['role'],
+                               student_info=student_info, 
+                               programmes=programmes, 
+                               terms=terms,
+                               assessors=assessors)
+
+    except Exception as e:
+        flash(f"An error occurred while fetching data: {str(e)}", 'danger')
+        return redirect(url_for('main.index'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @student_bp.route('/m_manage_assess_students', methods=['GET', 'POST'])
 def m_manage_assess_student():
     try:
