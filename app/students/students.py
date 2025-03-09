@@ -9,6 +9,13 @@ from io import BytesIO
 from app import app
 import mysql.connector  # Import mysql.connector at the top of your file
 from mysql.connector import Error  # Import the Error class from mysql.connector
+import openpyxl
+from openpyxl.worksheet.datavalidation import DataValidation
+from io import BytesIO
+import mysql.connector
+from flask import send_file
+
+
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 # Initialize blueprint
 student_bp = Blueprint('student', __name__)
@@ -29,87 +36,130 @@ def fetch_programmes_and_terms():
     return programmes, terms
 
 
+
+
+
+
+
+
+
+
+student_bp = Blueprint('student', __name__)
+
+def fetch_programmes_and_terms():
+    """Fetches programmes and terms from the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT id, programme_name, description FROM programmes")
+    programmes = cursor.fetchall()
+
+    cursor.execute("SELECT id, term FROM terms")
+    terms = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    return programmes, terms
+
+
+
+
+
+
+
 @student_bp.route('/manage_student', methods=['GET', 'POST'])
 def manage_student():
     try:
-        # Database connection and fetching programmes and terms
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+
+        # Fetch Programmes and Terms
         programmes, terms = fetch_programmes_and_terms()
 
-        # Base query for student information
+        # Fetch academic years and study years
+        cursor.execute("SELECT id, academic_year FROM academic_year")
+        academic_years = cursor.fetchall()
+
+        cursor.execute("SELECT id, study_year FROM study_year")
+        study_years = cursor.fetchall()
+
         query = """
-                            SELECT 
+            SELECT
                 si.id AS student_id,
-                si.student_teacher,  
-                si.reg_no, 
+                si.student_teacher,
+                si.reg_no,
                 si.subject,
-                si.class_name, 
-                si.topic, 
-                si.subtopic, 
+                si.class_name,
+                si.topic,
+                si.subtopic,
                 si.teaching_time,
-                p.programme_name, 
+                p.programme_name,
                 p.description AS programme_description,
-                t.term,
-                s.name AS school_name  -- Only select the school name
+                t.term AS term_name,
+                sy.study_year AS study_year,
+                ay.academic_year AS academic_year,
+                s.name AS school_name
             FROM student_info si
             LEFT JOIN programmes p ON si.programme_id = p.id
             LEFT JOIN terms t ON si.term_id = t.id
-            LEFT JOIN schools s ON si.school_id = s.id  -- Join to the schools table
-
-            """
+            LEFT JOIN schools s ON si.school_id = s.id
+            LEFT JOIN academic_year ay ON si.academic_year_id = ay.id
+            LEFT JOIN study_year sy ON si.study_year_id = sy.id
+        """
 
         params = []
 
         if request.method == 'POST':
             conditions = []
 
-            # Handle dynamic filtering
+            # Apply filters if values are provided
             if programme := request.form.get('programme'):
                 conditions.append("si.programme_id = %s")
-                params.append(programme)
-            
+                params.append(int(programme))
+
             if term := request.form.get('term'):
                 conditions.append("si.term_id = %s")
-                params.append(term)
+                params.append(int(term))
 
             if reg_no := request.form.get('reg_no'):
                 conditions.append("si.reg_no LIKE %s")
                 params.append(f"%{reg_no}%")
 
+            if academic_year := request.form.get('academic_year'):
+                conditions.append("ay.academic_year = %s")
+                params.append(academic_year)
+
+            if study_year := request.form.get('study_year'):
+                conditions.append("sy.study_year = %s")
+                params.append(study_year)
+
+            # If any filters are applied, add them to the query
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
 
-            # Debug: Print the query and parameters to ensure correctness
-            #print("Executing Query:", query)
-            #print("With Parameters:", params)
+            print(f"Executing SQL query: {query}")
+            print(f"With parameters: {params}")
 
             cursor.execute(query, params)
             student_info = cursor.fetchall()
 
-            # Debug: Check the fetched data
-            #print("Fetched Student Info:", student_info)
-
         else:
+            # If it's a GET request, return 0 students
+            
             student_info = []
 
         cursor.close()
         conn.close()
 
-        # Ensure that student_info is being passed correctly to the template
-        #print("Student Info for Rendering:", student_info)
-
-        # Selecting the correct template based on user role
         template = 'student/manage_student.html' if session['role'] == "Head of Department" else 'student/assessor_manage_student.html'
         return render_template(template, username=session['username'], role=session['role'],
-                               student_info=student_info, programmes=programmes, terms=terms)
-    
+                               student_info=student_info, programmes=programmes, terms=terms,
+                               academic_years=academic_years, study_years=study_years)
+
     except Exception as e:
-        # Log the error for debugging and provide feedback to the user
-        print(f"Error occurred: {str(e)}")  # Debug: Log error
+        print(f"Error occurred: {str(e)}")
         flash(f"An error occurred while fetching data: {str(e)}", 'danger')
         return redirect(url_for('main.index'))
-
 
 
 
@@ -555,41 +605,93 @@ def register_selected_students():
 
 
 
-
-
-
-# Helper function to check file extension
 def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# Route to download the template file
+
+
+
 @student_bp.route('/download_template', methods=['GET'])
 def download_template():
-    # Create a DataFrame with the template structure
-    template_data = {
-        "Student Teacher": ["", "", ""],
-        "Programme": ["", "", ""],
-        "Registration No": ["", "", ""],
-        "Term": ["", "", ""],
-        "Subject": ["", "", ""],
-        "Class": ["", "", ""],
-        "Teaching Time": ["", "", ""],
-        "Topic": ["", "", ""],
-        "Subtopic": ["", "", ""]
-    }
+    # Fetch data from the database
+    conn = get_db_connection()
+    if not conn:
+        print("Failed to connect to the database.")
+        return "Database connection failed", 500
 
-    df = pd.DataFrame(template_data)
+    cursor = conn.cursor(dictionary=True)
 
-    # Save it to an Excel file in memory
+    # Fetch programmes, terms, and schools from the database
+    cursor.execute("SELECT id, programme_name FROM programmes ORDER BY programme_name")
+    programmes = [row['programme_name'] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT id, term FROM terms ORDER BY term")
+    terms = [row['term'] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT id, name FROM schools ORDER BY name")
+    schools = [row['name'] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT id, academic_year FROM academic_year ORDER BY academic_year")
+    academic_year = [row['academic_year'] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT id, study_year FROM study_year ORDER BY study_year")
+    study_year = [row['study_year'] for row in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
+    # Create a new workbook and select the active worksheet
+    wb = openpyxl.Workbook()
+    ws1 = wb.active
+    ws1.title = "Students Template"
+
+    # Add headers to the first sheet
+    ws1.append(["student_teacher", "reg no", "Semester", "School", "programmes", "Academic Year", "Study Year"])
+
+    # Create a second sheet for drop-down data
+    ws2 = wb.create_sheet("drop_down data")
+    ws2.append(["Terms", "programmes", "Schools", "academic_year", "study_year"])
+    ws2.append([", ".join(terms), ", ".join(programmes), ", ".join(schools), ", ".join(academic_year), ", ".join(study_year)])
+
+    # Create data validation for Term
+    dv_term = DataValidation(type="list", formula1=f'"{",".join(terms)}"', allow_blank=True)
+    ws1.add_data_validation(dv_term)
+    dv_term.add("C2:C100")  # Apply to rows 2 to 100 in the Term column
+
+    # Create data validation for Programmes
+    dv_programmes = DataValidation(type="list", formula1=f'"{",".join(programmes)}"', allow_blank=True)
+    ws1.add_data_validation(dv_programmes)
+    dv_programmes.add("E2:E100")  # Apply to rows 2 to 100 in the Programmes column
+
+    # Create data validation for School
+    dv_school = DataValidation(type="list", formula1=f'"{",".join(schools)}"', allow_blank=True)
+    ws1.add_data_validation(dv_school)
+    dv_school.add("D2:D100")  # Apply to rows 2 to 100 in the School column
+
+    # Create data validation for Academic Year
+    dv_academic_year = DataValidation(type="list", formula1=f'"{",".join(academic_year)}"', allow_blank=True)
+    ws1.add_data_validation(dv_academic_year)
+    dv_academic_year.add("F2:F100")  # Apply to rows 2 to 100 in the Academic Year column
+
+    # Create data validation for Study Year
+    dv_study_year = DataValidation(type="list", formula1=f'"{",".join(study_year)}"', allow_blank=True)
+    ws1.add_data_validation(dv_study_year)
+    dv_study_year.add("G2:G100")  # Apply to rows 2 to 100 in the Study Year column
+
+    # Save the workbook to memory
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Template')
-    
-    # Move the pointer to the beginning of the BytesIO buffer before sending it
-    output.seek(0)
+    try:
+        wb.save(output)
+        output.seek(0)
+    except Exception as e:
+        print(f"Error saving workbook: {e}")
+        return "Error saving workbook", 500
 
+    # Return the file as an attachment
     return send_file(output, as_attachment=True, download_name="student_teacher_template.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
 
 
@@ -601,7 +703,6 @@ def download_template():
 # Ensure the upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
-
 
 
 @student_bp.route('/upload_excel', methods=['GET', 'POST'])
@@ -653,8 +754,6 @@ def upload_excel():
 
 
 
-
-
 def validate_excel_data(df):
     processed_data = []
     errors = []
@@ -666,53 +765,77 @@ def validate_excel_data(df):
         cursor = connection.cursor()
 
         for index, row in df.iterrows():
-            reg_no = row.get('Registration No')
-            programme_name = row.get('Programme')
-            term = row.get('Term')
+            reg_no = row.get('reg no')
+            programmes = row.get('programmes')
+            term = row.get('Semester')  # 'Semester' maps to 'term'
+            school = row.get('School')
+            academic_year = row.get('Academic Year')
+            study_year = row.get('Study Year')
 
-            # ✅ Essential fields check (excluding optional fields)
-            if pd.isna(reg_no) or pd.isna(programme_name) or pd.isna(term):
+            # ✅ Essential fields check
+            if pd.isna(reg_no) or pd.isna(programmes) or pd.isna(term) or pd.isna(school) or pd.isna(academic_year) or pd.isna(study_year):
                 errors.append(f"Missing required fields in row {index + 1}.")
                 continue
 
             reg_no = str(reg_no).strip()  # Ensure it's a string
-            
+
+            # Check for duplicates in the current batch
             if reg_no in seen_reg_nos:
                 duplicate_reg_nos.append(reg_no)
                 continue
             seen_reg_nos.add(reg_no)
 
+            # Check if the reg_no already exists in the database
             cursor.execute("SELECT COUNT(*) FROM student_info WHERE reg_no = %s", (reg_no,))
             if cursor.fetchone()[0] > 0:
                 existing_reg_nos.append(reg_no)
                 continue
 
-            cursor.execute("SELECT id FROM programmes WHERE programme_name = %s", (programme_name,))
+            # Check if the programme exists in the database
+            cursor.execute("SELECT id FROM programmes WHERE programme_name = %s", (programmes,))
             programme_id = cursor.fetchone()
 
+            # Check if the school exists in the database
+            cursor.execute("SELECT id FROM schools WHERE name = %s", (school,))
+            school_id = cursor.fetchone()
+
+            # Check if the term (semester) exists in the database
             cursor.execute("SELECT id FROM terms WHERE term = %s", (term,))
             term_id = cursor.fetchone()
 
+            # Check if the academic year exists in the database
+            cursor.execute("SELECT id FROM academic_year WHERE academic_year = %s", (academic_year,))
+            academic_year_id = cursor.fetchone()
+
+            # Check if the study year exists in the database
+            cursor.execute("SELECT id FROM study_year WHERE study_year = %s", (study_year,))
+            study_year_id = cursor.fetchone()
+
+            # Add errors for missing program, school, term, academic year, or study year
             if not programme_id:
-                errors.append(f"Programme '{programme_name}' does not exist in row {index + 1}.")
+                errors.append(f"Programme '{programmes}' does not exist in row {index + 1}.")
+            if not school_id:
+                errors.append(f"School '{school}' does not exist in row {index + 1}.")
             if not term_id:
                 errors.append(f"Term '{term}' does not exist in row {index + 1}.")
+            if not academic_year_id:
+                errors.append(f"Academic Year '{academic_year}' does not exist in row {index + 1}.")
+            if not study_year_id:
+                errors.append(f"Study Year '{study_year}' does not exist in row {index + 1}.")
 
-            if programme_id and term_id:
+            # If all necessary IDs are found, prepare data for insertion
+            if programme_id and term_id and school_id and academic_year_id and study_year_id:
                 processed_data.append({
-                    'student_teacher': row.get('Student Teacher', ''), 
-                    'programme_id': programme_id[0], 
+                    'student_teacher': row.get('student_teacher', ''),
+                    'programme_id': programme_id[0],
                     'reg_no': reg_no,
-                    'subject': row.get('Subject') if not pd.isna(row.get('Subject')) else None,
-                    'term_id': term_id[0], 
-                    'class_name': row.get('Class') if not pd.isna(row.get('Class')) else None,
-                    'topic': row.get('Topic') if not pd.isna(row.get('Topic')) else None,
-                    'subtopic': row.get('Subtopic') if not pd.isna(row.get('Subtopic')) else None,
-                    'teaching_time': format_teaching_time(row.get('Teaching Time'))
+                    'term_id': term_id[0],
+                    'school_id': school_id[0],
+                    'academic_year_id': academic_year_id[0],
+                    'study_year_id': study_year_id[0],
                 })
 
     return processed_data, errors, existing_reg_nos, duplicate_reg_nos
-
 
 
 
@@ -727,32 +850,18 @@ def insert_into_database(data):
     with get_db_connection() as connection:
         cursor = connection.cursor()
         sql = """
-        INSERT INTO student_info (student_teacher, programme_id, reg_no, subject, term_id, 
-                                  class_name, topic, subtopic, teaching_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO student_info (student_teacher, programme_id, reg_no, term_id, school_id, academic_year_id, study_year_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         for row in data:
             cursor.execute(sql, (
-                row['student_teacher'], row['programme_id'], row['reg_no'], 
-                row['subject'], row['term_id'], row['class_name'], 
-                row['topic'], row['subtopic'], row['teaching_time']
+                row['student_teacher'], row['programme_id'], row['reg_no'],
+                row['term_id'], row['school_id'], row['academic_year_id'], row['study_year_id']
             ))
         connection.commit()
 
 
 
-
-
-# Function to format teaching time correctly
-def format_teaching_time(teaching_time):
-    if isinstance(teaching_time, datetime):
-        return teaching_time.strftime('%Y-%m-%d %H:%M:%S')
-    elif isinstance(teaching_time, str):
-        try:
-            return datetime.strptime(teaching_time, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
-        except ValueError:
-            return None  # Handle invalid date formats
-    return None
 
 
 
@@ -836,7 +945,7 @@ def manage_assigned_student():
         return render_template('student/manage_assigned_student.html', 
                                username=session['username'], 
                                role=session['role'],
-                               student_info=student_info, 
+                               student_info=student_info,
                                programmes=programmes, 
                                terms=terms,
                                assessors=assessors)

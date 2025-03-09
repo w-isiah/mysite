@@ -190,162 +190,146 @@
 
 
 
+<!-- Miscellaneous Section -->
+<li class="nav-header">TEACHER OBSERVATION TOOL</li>
 
-        <!-- Miscellaneous Section -->
-        <li class="nav-header">TEACHER OBSERVATION TOOL</li>
+<!-- Assessment Section -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-pencil-alt"></i>
+    <p>
+      Assessment
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('assessment.assessment_report') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>View Report</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('assessment.check_student') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Assess A Student</p>
+      </a>
+    </li>
+  </ul>
+</li>
 
-        <!-- Assessment -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-pencil-alt"></i>
-            <p>
-              Assessment
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('assessment.assessment_report') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Report</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('assessment.check_student') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Assess A Student</p>
-              </a>
-            </li>
-          </ul>
-        </li>
+<!-- Results Section -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-chart-line"></i>
+    <p>
+      Results
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('student.moderator_manage_assess_students') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>View Results</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('assessment.check_student') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Assess A Student</p>
+      </a>
+    </li>
+  </ul>
+</li>
 
+<!-- Manual Assessment Section -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-pencil-alt"></i>
+    <p>
+      Manual Assessment
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('moderate.manage_students') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>View Students</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('moderate.check_student') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Assess A Student</p>
+      </a>
+    </li>
+  </ul>
+</li>
 
+<!-- Aspect Questions Section -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-cogs"></i>
+    <p>
+      Aspect Questions
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('aspects.manage_aspects') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>View Aspects</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{{ url_for('aspects.add_aspects') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Add Aspect</p>
+      </a>
+    </li>
+  </ul>
+</li>
 
-         <!-- Assessment -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-pencil-alt"></i>
-            <p>
-              Results
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ url_for('student.moderator_manage_assess_students') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>View Results</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ url_for('assessment.check_student') }}" class="nav-link">
-                <i class="far fa-circle nav-icon"></i>
-                <p>Assess A Student</p>
-              </a>
-            </li>
-          </ul>
-        </li>
+<!-- Assign Assessor Section -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-user-tag"></i>
+    <p>
+      Assign Assessor
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>View Students</p>
+      </a>
+    </li>
+  </ul>
+</li>
 
-
-
-
-
-
-
-
-        <!-- Moderate -->
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-           <i class="nav-icon fas fa-pencil-alt"></i>
-           <p>
-            Manual Assessment
-            <i class="right fas fa-angle-left"></i>
-          </p>
-        </a>
-        <ul class="nav nav-treeview">
-          <li class="nav-item">
-            <a href="{{ url_for('moderate.manage_students') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>View Students</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ url_for('moderate.check_student') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>Assess A Student</p>
-            </a>
-          </li>
-        </ul>
-      </li>
-
-
-
-
-      <!-- Aspects -->
-      <li class="nav-item has-treeview">
-        <a href="#" class="nav-link">
-          <i class="nav-icon fas fa-cogs"></i>
-          <p>
-            Aspect Questions
-            <i class="right fas fa-angle-left"></i>
-          </p>
-        </a>
-        <ul class="nav nav-treeview">
-          <li class="nav-item">
-            <a href="{{ url_for('aspects.manage_aspects') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>View Aspects</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ url_for('aspects.add_aspects') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>Add Aspect</p>
-            </a>
-          </li>
-        </ul>
-      </li>
-
-      <!-- Assign Assessor -->
-      <li class="nav-item has-treeview">
-        <a href="#" class="nav-link">
-          <i class="nav-icon fas fa-user-tag"></i>
-          <p>
-            Assign Assessor
-            <i class="right fas fa-angle-left"></i>
-          </p>
-        </a>
-        <ul class="nav nav-treeview">
-          <li class="nav-item">
-            <a href="{{ url_for('assign_assessor.manage_student') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>View Students</p>
-            </a>
-          </li>
-         
-        </ul>
-      </li>
-
-
-       <!-- Assign Assessor -->
-      <li class="nav-item has-treeview">
-        <a href="#" class="nav-link">
-          <i class="nav-icon fas fa-user-tag"></i>
-          <p>
-            Un_Assign Assessor
-            <i class="right fas fa-angle-left"></i>
-          </p>
-        </a>
-        <ul class="nav nav-treeview">
-          <li class="nav-item">
-            <a href="{{ url_for('assign_assessor.un_assign_manage_students') }}" class="nav-link">
-              <i class="far fa-circle nav-icon"></i>
-              <p>View Students</p>
-            </a>
-          </li>
-         
-        </ul>
-      </li>
+<!-- Un-Assign Assessor Section -->
+<li class="nav-item has-treeview">
+  <a href="#" class="nav-link">
+    <i class="nav-icon fas fa-user-times"></i>
+    <p>
+      Un-Assign Assessor
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    <li class="nav-item">
+      <a href="{{ url_for('assign_assessor.un_assign_manage_students') }}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>View Students</p>
+      </a>
+    </li>
+  </ul>
+</li>
 
 
 
