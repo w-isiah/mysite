@@ -70,7 +70,7 @@
               <div class="form-group mr-2">
                 <label for="term" class="mr-2">Semester:</label>
                 <select name="term_id" id="term" class="form-control">
-                  <option value="">Select Term</option>
+                  <option value="">Select Semester</option>
                   {% for term in terms %}
                     <option value="{{ term.id }}" {% if term.id == term_id %} selected {% endif %}>{{ term.term }} - {{ term.year }}</option>
                   {% endfor %}
@@ -104,7 +104,7 @@
                   <th>Reg No</th>
                   <th>Student Name</th>
                   <th>Subject</th>
-                  <th>Term</th>
+                  <th>Semester</th>
                   <th>Assessor</th>
                   <th>Total Score</th>
                 </tr>

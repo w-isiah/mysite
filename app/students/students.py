@@ -1116,9 +1116,9 @@ def moderator_manage_assess_students():
         cursor.execute(assessors_query)
         assessors = cursor.fetchall()
 
-        # Base query for student information, modified to include assessor filter if given
+        # Base query for student information
         query = """
-            SELECT 
+            SELECT DISTINCT
                 si.id AS student_id,
                 si.student_teacher,  
                 si.reg_no, 
@@ -1130,7 +1130,7 @@ def moderator_manage_assess_students():
                 p.programme_name, 
                 p.description AS programme_description,
                 t.term AS term,
-                a.assessor_id IS NOT NULL AS assigned,
+                COALESCE(a.assessor_id, 0) IS NOT NULL AS assigned,
                 u.username AS assessor_name,
                 si.term_id AS term_id
             FROM student_info si
@@ -1142,6 +1142,9 @@ def moderator_manage_assess_students():
 
         # Prepare params for filtering
         params = []
+
+        # Default to an empty list if no filters are applied
+        student_info = []
 
         # If it's a POST request, add filters to the query
         if request.method == 'POST':
@@ -1165,40 +1168,40 @@ def moderator_manage_assess_students():
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
 
-        # Execute query to fetch students based on filtering
-        cursor.execute(query, params)
-        student_info = cursor.fetchall()
+                # Execute query to fetch students based on filtering
+                cursor.execute(query, params)
+                student_info = cursor.fetchall()
 
-        # For each student, check if a mark exists for the same term_id in the marks table
-        for student in student_info:
-            term_id = student['term_id']
-            student_id = student['student_id']
+                # For each student, check if a mark exists for the same term_id in the marks table
+                for student in student_info:
+                    term_id = student['term_id']
+                    student_id = student['student_id']
 
-            # Query to check if the student has a mark for the same term_id by this specific assessor
-            mark_query = """
-                SELECT marks, marks_scores_sku
-                FROM marks 
-                WHERE student_id = %s AND term_id = %s 
-                LIMIT 1
-            """
-            cursor.execute(mark_query, (student_id, term_id))
-            mark_result = cursor.fetchone()
+                    # Query to check if the student has a mark for the same term_id by this specific assessor
+                    mark_query = """
+                        SELECT marks, marks_scores_sku
+                        FROM marks 
+                        WHERE student_id = %s AND term_id = %s 
+                        LIMIT 1
+                    """
+                    cursor.execute(mark_query, (student_id, term_id))
+                    mark_result = cursor.fetchone()
 
-            if mark_result:
-                student['status'] = 'Assessed'
-                student['mark'] = mark_result['marks']
-                student['marks_scores_sku'] = mark_result['marks_scores_sku']
-            else:
-                required_fields = ['term', 'programme_name', 'class_name', 'reg_no', 'subject', 'topic', 'subtopic', 'teaching_time']
-                missing_fields = [field for field in required_fields if not student.get(field)]
+                    if mark_result:
+                        student['status'] = 'Assessed'
+                        student['mark'] = mark_result['marks']
+                        student['marks_scores_sku'] = mark_result['marks_scores_sku']
+                    else:
+                        required_fields = ['term', 'programme_name', 'class_name', 'reg_no', 'subject', 'topic', 'subtopic', 'teaching_time']
+                        missing_fields = [field for field in required_fields if not student.get(field)]
 
-                if missing_fields:
-                    student['status'] = 'Update Student Data'
-                    student['mark'] = None
-                else:
-                    student['status'] = 'Unassessed'
-                    student['mark'] = None
-                    student['marks_scores_sku'] = None
+                        if missing_fields:
+                            student['status'] = 'Update Student Data'
+                            student['mark'] = None
+                        else:
+                            student['status'] = 'Unassessed'
+                            student['mark'] = None
+                            student['marks_scores_sku'] = None
 
         cursor.close()
         conn.close()

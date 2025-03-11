@@ -90,27 +90,23 @@
                 <h3 class="card-title">Filter Students</h3>
               </div>
               <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <a href="{{ url_for('student.add_student') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-user-plus"></i> Add New Student
+                  </a>
 
-                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="m-0">Students Overview</h5>
-                                <a href="{{ url_for('student.add_student') }}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-user-plus"></i> Add New Student
-                                </a>
-                            </div>
+                  <a href="{{ url_for('student.upload_excel') }}" class="btn btn-info btn-sm">
+                    <i class="fas fa-upload"></i> Upload Student Data Excel file 
+                  </a>
 
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="m-0">Upload Excel</h5>
-                                <a href="{{ url_for('student.upload_excel') }}" class="btn btn-info btn-sm">
-                                    <i class="fas fa-upload"></i> Upload Excel
-                                </a>
-                            </div>
+                  <button id="exportExcelButton" class="btn btn-primary btn-sm">Export to Excel</button>
+                </div>
 
-                            
                 <p class="mt-2">Use the filters below to narrow down the student list.</p>
-                <form method="POST" class="form-inline">
+                <form method="POST" class="form-inline d-flex flex-wrap">
                   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-                  <div class="form-group mr-2">
+                  <div class="form-group mr-2 mb-2">
                     <label for="programme" class="mr-2">Programme:</label>
                     <select name="programme" id="programme" class="form-control select2">
                       <option value="" selected disabled="selected">Select Programme</option>
@@ -122,10 +118,10 @@
                     </select>
                   </div>
 
-                  <div class="form-group mr-2">
-                    <label for="term" class="mr-2">Term:</label>
+                  <div class="form-group mr-2 mb-2">
+                    <label for="term" class="mr-2">Semester:</label>
                     <select name="term" id="term" class="form-control select2">
-                      <option value="">Select Term</option>
+                      <option value="">Select Semester</option>
                       {% for term in terms %}
                       <option value="{{ term.id }}" {% if request.form.get('term') == term.id %} selected {% endif %}>
                         {{ term.term }}
@@ -134,12 +130,12 @@
                     </select>
                   </div>
 
-                  <div class="form-group mr-2">
+                  <div class="form-group mr-2 mb-2">
                     <label for="reg_no" class="mr-2">Reg No:</label>
-                    <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No" >
+                    <input type="text" name="reg_no" id="reg_no" class="form-control" placeholder="Enter Reg No">
                   </div>
 
-                  <div class="form-group mr-2">
+                  <div class="form-group mr-2 mb-2">
                     <label for="academic_year" class="mr-2">Academic Year:</label>
                     <select name="academic_year" id="academic_year" class="form-control select2">
                       <option value="" selected disabled="selected">Select Academic Year</option>
@@ -151,7 +147,7 @@
                     </select>
                   </div>
 
-                  <div class="form-group mr-2">
+                  <div class="form-group mr-2 mb-2">
                     <label for="study_year" class="mr-2">Study Year:</label>
                     <select name="study_year" id="study_year" class="form-control select2">
                       <option value="" selected disabled="selected">Select Study Year</option>
@@ -163,9 +159,10 @@
                     </select>
                   </div>
 
-                  <button type="submit" class="btn btn-success">Search</button>
+                  <button type="submit" class="btn btn-success mb-2">Search</button>
                 </form>
               </div>
+
             </div>
           </div>
         </div>
@@ -199,10 +196,10 @@
                       <tr>
                         <td>{{ student.reg_no }}</td>
                         <td>{{ student.student_teacher }}</td>
-                         <td>{{ student.term_name }}</td>
+                        <td>{{ student.term_name }}</td>
                         <td>{{ student.study_year }}</td>
                         <td>{{ student.academic_year }}</td>
-                       
+
                         <td>{{ student.subject }}</td>
                         <td>{{ student.programme_name }}</td>
 
@@ -273,12 +270,30 @@
     });
   });
 
-  // Export table to Excel
-  function exportTableToExcel() {
+ // Export table to Excel, excluding the last column
+function exportTableToExcel() {
     var table = document.getElementById('example');
-    var wb = XLSX.utils.table_to_book(table, { sheet: 'Assessment Data' });
+
+    // Get the table data as a JSON object (this includes all columns)
+    var rows = Array.from(table.rows);
+    
+    // Exclude the last column from the table data
+    var modifiedData = rows.slice(1).map(function(row) { // Skip the header row
+        var rowData = Array.from(row.cells).slice(0, -1); // Remove the last column
+        return Array.from(rowData).map(cell => cell.innerText); // Get text content of each cell
+    });
+
+    // Create a new worksheet using the modified data
+    var ws = XLSX.utils.aoa_to_sheet(modifiedData);
+
+    // Create a new workbook
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Assessment Data');
+
+    // Export to Excel
     XLSX.writeFile(wb, 'assessment_report.xlsx');
-  }
+}
+
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>

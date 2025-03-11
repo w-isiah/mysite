@@ -102,9 +102,9 @@
 
                 <!-- Term Dropdown -->
                 <div class="form-group mr-2">
-                  <label for="term" class="mr-2">Term:</label>
+                  <label for="term" class="mr-2"><td>{{ student.reg_no }}</td>:</label>
                   <select name="term" id="term" class="form-control">
-                    <option value="">Select Term</option>
+                    <option value="">Select <td>{{ student.reg_no }}</td></option>
                     {% for term in terms %}
                       <option value="{{ term.id }}" {% if request.form.get('term') == term.id %} selected {% endif %}>
                         {{ term.term }}
@@ -137,10 +137,11 @@
               <table id="example1" class="table table-bordered table-striped table-hover">
                 <thead>
                   <tr>
+                     <th>Reg No</th>
                     <th>Student Teacher</th>
-                    <th>Term</th>
+                    <th>Semester</th>
                     <th>Subject</th>
-                    <th>Reg No</th>
+                   
                     <th>Class Name</th>
                     <th>Topic</th>
                     <th>Subtopic</th>
@@ -152,10 +153,12 @@
                 <tbody>
                   {% for student in student_info %}
                     <tr>
+                       <td>{{ student.reg_no }}</td>
                       <td>{{ student.student_teacher }}</td>
+                      
                       <td>{{ student.term }}</td>
                       <td>{{ student.subject }}</td>
-                      <td>{{ student.reg_no }}</td>
+                     
                       <td>{{ student.class_name }}</td>
                       <td>{{ student.topic }}</td>
                       <td>{{ student.subtopic }}</td>

@@ -91,9 +91,9 @@
 
                                     <!-- Term Dropdown -->
                                     <div class="form-group mr-2">
-                                        <label for="term" class="mr-2">Term:</label>
+                                        <label for="term" class="mr-2">Semester:</label>
                                         <select name="term" id="term" class="form-control select2">
-                                            <option value="" selected  disabled="selected">Select Term</option>
+                                            <option value="" selected  disabled="selected">Select Semester</option>
                                             {% for term in terms %}
                                                 <option value="{{ term.id }}" 
                                                     {% if request.form.get('term') == term.id %} selected {% endif %}>
@@ -155,10 +155,11 @@
                                         <thead>
                                             <tr>
                                                 <th><input type="checkbox" id="select_all" /> Select All</th>
-                                                <th>Student Teacher</th>
-                                                <th>Term</th>
-                                                <th>Subject</th>
                                                 <th>Reg No</th>
+                                                <th>Student Teacher</th>
+                                                <th>Semester</th>
+                                                <th>Subject</th>
+                                                
                                                 <th>Programme</th>
                                                 <th>Assigned</th>
                                             </tr>
@@ -167,10 +168,11 @@
                                             {% for student in student_info %}
                                                 <tr>
                                                     <td><input type="checkbox" class="student_checkbox" name="student_ids" value="{{ student.student_id }}" /></td>
+                                                    <td>{{ student.reg_no }}</td>
                                                     <td>{{ student.student_teacher }}</td>
                                                     <td>{{ student.term }}</td>
                                                     <td>{{ student.subject }}</td>
-                                                    <td>{{ student.reg_no }}</td>
+                                                    
                                                     <td>{{ student.programme_name }}</td>
                                                     <td>
                                                         {% if student.assigned %}

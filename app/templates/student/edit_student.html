@@ -124,7 +124,7 @@
 
                   <!-- Term Selection -->
                   <div class="form-group">
-                    <label for="term">Term:</label>
+                    <label for="term">Semester:</label>
                     <select name="term_id" id="term" class="form-control select2" required>
                       {% for term in terms %}
                       <option value="{{ term.id }}" {% if term.id == student.term_id %}selected{% endif %}>

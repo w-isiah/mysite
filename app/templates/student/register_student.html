@@ -80,7 +80,7 @@
 
                 <!-- Term Selection -->
                 <div class="form-group">
-                    <label for="term">Select Term:</label>
+                    <label for="term">Select Semester:</label>
                     <select name="term_id" id="term" class="form-control select2" required>
                         {% for term in terms %}
                         <option value="{{ term.id }}" {% if term.id == student.term_id %}selected{% endif %}>
@@ -92,7 +92,7 @@
 
                 <!-- Submit Button -->
                 <div class="d-flex justify-content-end">
-                    <button type="submit" id="submitBtn" class="btn btn-success">Update Term</button>
+                    <button type="submit" id="submitBtn" class="btn btn-success">Update Semester</button>
                 </div>
             </form>
         </div>

@@ -85,9 +85,9 @@
 
                                 <!-- Term Dropdown -->
                                 <div class="form-group mr-2">
-                                    <label for="term" class="mr-2">Term:</label>
+                                    <label for="term" class="mr-2">Semester:</label>
                                     <select name="term" id="term" class="form-control select2">
-                                        <option value="">Select Term</option>
+                                        <option value="">Select Semester</option>
                                         {% for term in terms %}
                                         <option value="{{ term.id }}" 
                                         {% if request.form.get('term') == term.id %} selected {% endif %}>
