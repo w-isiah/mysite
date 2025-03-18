@@ -648,11 +648,11 @@ def download_template():
     ws1.title = "Students Template"
 
     # Add headers to the first sheet
-    ws1.append(["student_teacher", "reg no", "Semester", "School", "programmes", "Academic Year", "Study Year"])
+    ws1.append(["reg no", "student_teacher", "Semester", "School", "programmes", "Academic Year", "Study Year"])
 
     # Create a second sheet for drop-down data
     ws2 = wb.create_sheet("drop_down data")
-    ws2.append(["Terms", "programmes", "Schools", "academic_year", "study_year"])
+    ws2.append(["terms", "programmes", "Schools", "academic_year", "study_year"])
     ws2.append([", ".join(terms), ", ".join(programmes), ", ".join(schools), ", ".join(academic_year), ", ".join(study_year)])
 
     # Create data validation for Term
@@ -765,6 +765,7 @@ def validate_excel_data(df):
         cursor = connection.cursor()
 
         for index, row in df.iterrows():
+            student_teacher = row.get('student_teacher')
             reg_no = row.get('reg no')
             programmes = row.get('programmes')
             term = row.get('Semester')  # 'Semester' maps to 'term'
@@ -773,9 +774,11 @@ def validate_excel_data(df):
             study_year = row.get('Study Year')
 
             # ✅ Essential fields check
-            if pd.isna(reg_no) or pd.isna(programmes) or pd.isna(term) or pd.isna(school) or pd.isna(academic_year) or pd.isna(study_year):
+            if pd.isna(reg_no) or pd.isna(student_teacher)  or pd.isna(programmes) or pd.isna(term) or pd.isna(school) or pd.isna(academic_year) or pd.isna(study_year):
                 errors.append(f"Missing required fields in row {index + 1}.")
+                
                 continue
+
 
             reg_no = str(reg_no).strip()  # Ensure it's a string
 
@@ -825,6 +828,7 @@ def validate_excel_data(df):
 
             # If all necessary IDs are found, prepare data for insertion
             if programme_id and term_id and school_id and academic_year_id and study_year_id:
+                print(f'{row.get('student_teaher')}')
                 processed_data.append({
                     'student_teacher': row.get('student_teacher', ''),
                     'programme_id': programme_id[0],

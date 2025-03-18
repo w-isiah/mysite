@@ -162,7 +162,6 @@
                   <button type="submit" class="btn btn-success mb-2">Search</button>
                 </form>
               </div>
-
             </div>
           </div>
         </div>
@@ -174,6 +173,7 @@
                 <h3 class="card-title">Students List</h3>
               </div>
               <div class="card-body">
+                {% if student_info %}
                 <form method="POST" action="{{ url_for('assign_assessor.assign_assessor') }}">
                   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
@@ -187,7 +187,6 @@
                         <th>Academic Year</th>
                         <th>Subject</th>
                         <th>Programme</th>
-                        
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -199,10 +198,8 @@
                         <td>{{ student.term_name }}</td>
                         <td>{{ student.study_year }}</td>
                         <td>{{ student.academic_year }}</td>
-
                         <td>{{ student.subject }}</td>
                         <td>{{ student.programme_name }}</td>
-
                         <td>
                           <div class="btn-group" role="group">
                             <a href="{{ url_for('student.register_student', student_id=student.student_id) }}" class="btn btn-warning btn-sm" data-toggle="tooltip" data-placement="top" title="Register Student">
@@ -221,6 +218,9 @@
                     </tbody>
                   </table>
                 </form>
+                {% else %}
+                <p>No students found matching your search criteria.</p>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -260,9 +260,6 @@
       scrollY: 300
     });
 
-
-
-
     // Enable export button when clicked
     $('#exportExcelButton').click(function (e) {
       e.preventDefault();
@@ -270,8 +267,8 @@
     });
   });
 
- // Export table to Excel, excluding the last column
-function exportTableToExcel() {
+  // Export table to Excel, excluding the last column
+  function exportTableToExcel() {
     var table = document.getElementById('example');
 
     // Get the table data as a JSON object (this includes all columns)
@@ -292,8 +289,7 @@ function exportTableToExcel() {
 
     // Export to Excel
     XLSX.writeFile(wb, 'assessment_report.xlsx');
-}
-
+  }
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>

@@ -19,10 +19,7 @@ UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER')  # Ensure this is defined in you
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Ensure Flask app secret key is set (for session management)
-# app.secret_key = 'your_secret_key'
 
-# Routes for Authentication (Login, Logout, Session Timeout)
 
 @users_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -31,28 +28,33 @@ def login():
         password = request.form['password']
 
         # Get DB connection using context manager
-        with get_db_connection() as connection:
-            with connection.cursor(dictionary=True) as cursor:
-                cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-                user = cursor.fetchone()
+        try:
+            with get_db_connection() as connection:
+                with connection.cursor(dictionary=True) as cursor:
+                    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+                    user = cursor.fetchone()
 
-                if user and check_password_hash(user['password'], password):
-                    session.update({
-                        'loggedin': True,
-                        'id': user['id'],
-                        'username': user['username'],
-                        'first_name': user['first_name'],
-                        'last_name': user['last_name'],
-                        'profile_image': user['profile_image'],
-                        'role': user['role'],
-                        'last_activity': datetime.utcnow()
-                    })
-                    session.permanent = True  # Make session permanent
-                    flash('Login successful!', 'success')
-                    return redirect(url_for('main.index'))  # Redirect to main page
-                flash('Invalid username or password.', 'danger')
+                    if user and check_password_hash(user['password'], password):
+                        session.update({
+                            'loggedin': True,
+                            'id': user['id'],
+                            'username': user['username'],
+                            'first_name': user['first_name'],
+                            'last_name': user['last_name'],
+                            'profile_image': user['profile_image'],
+                            'role': user['role'],
+                            'last_activity': datetime.utcnow()
+                        })
+                        session.permanent = True  # Make session permanent
+                        flash('Login successful!', 'success')
+                        return redirect(url_for('main.index'))  # Redirect to main page
+                    else:
+                        flash('Invalid username or password.', 'danger')
+        except Exception as e:
+            flash(f'An error occurred: {e}', 'danger')
 
     return render_template('accounts/login.html')
+
 
 
 @users_bp.route('/logout')
