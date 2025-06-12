@@ -27,14 +27,14 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        # Get DB connection using context manager
         try:
             with get_db_connection() as connection:
                 with connection.cursor(dictionary=True) as cursor:
                     cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
                     user = cursor.fetchone()
 
-                    if user and check_password_hash(user['password'], password):
+                    # Direct password comparison (insecure)
+                    if user and user['password'] == password:
                         session.update({
                             'loggedin': True,
                             'id': user['id'],
@@ -45,9 +45,9 @@ def login():
                             'role': user['role'],
                             'last_activity': datetime.utcnow()
                         })
-                        session.permanent = True  # Make session permanent
+                        session.permanent = True
                         flash('Login successful!', 'success')
-                        return redirect(url_for('main.index'))  # Redirect to main page
+                        return redirect(url_for('main.index'))
                     else:
                         flash('Invalid username or password.', 'danger')
         except Exception as e:
@@ -57,58 +57,91 @@ def login():
 
 
 
+
 @users_bp.route('/logout')
 def logout():
     session.clear()  # Clear session data
     flash('You have logged out successfully.', 'success')
     return redirect(url_for('auth.login'))  # Redirect to login page
 
-# User Management Routes (Admin/Head of Department)
+
+
+
+
+
 
 @users_bp.route('/manage_users')
 def manage_users():
-    try:
-        with get_db_connection() as connection:
-            with connection.cursor(dictionary=True) as cursor:
-                if session['role'] == 'admin':
-                    cursor.execute("SELECT * FROM users WHERE role != 'admin'")
-                elif session['role'] == 'Head of Department':
-                    cursor.execute("SELECT * FROM users WHERE role NOT IN ('admin', 'Head of Department', 'Dean')")
-                users = cursor.fetchall()
+    # Ensure user is logged in
+    if 'role' not in session:
+        flash("Please log in to continue.", "warning")
+        return redirect(url_for('auth.login'))
 
-                num = len(users)
-    except Exception as e:
-        flash(f"Error fetching data: {str(e)}", 'danger')
+    role = session.get('role')
+    username = session.get('username')
+
+    query = ""
+    params = ()
+
+    # Define query based on role
+    if role == 'admin':
+        query = "SELECT * FROM users WHERE role != %s"
+        params = ('admin',)
+    elif role == 'Head of Department':
+        query = "SELECT * FROM users WHERE role NOT IN (%s, %s, %s)"
+        params = ('admin', 'Head of Department', 'Dean')
+    else:
+        flash("You are not authorized to view this page.", "danger")
         return redirect(url_for('main.index'))
 
-    template = 'accounts/manage_users.html' if session['role'] == 'admin' else 'accounts/moderator/manage_users.html'
-    return render_template(template, username=session['username'], role=session['role'], num=num, users=users)
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(dictionary=True) as cursor:
+                cursor.execute(query, params)
+                users = [user for user in cursor.fetchall() if user.get('id') is not None]
+                user_count = len(users)
+    except Exception as e:
+        flash(f"Error fetching user data: {str(e)}", "danger")
+        return redirect(url_for('main.index'))
+
+    template = 'accounts/manage_users.html' if role == 'admin' else 'accounts/moderator/manage_users.html'
+    return render_template(template, users=users, num=user_count, username=username, role=role)
+
+
+
+
+
+
+
 
 @users_bp.route('/api/manage_users_count', methods=['GET'])
 def get_users_count():
     try:
-        with get_db_connection() as connection:
-            with connection.cursor(dictionary=True) as cursor:
-                cursor.execute("SELECT COUNT(*) FROM users WHERE role != 'admin'")
-                num = cursor.fetchone()[0]  # Extract count value from tuple
-        return jsonify({"count": num})
-
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM users WHERE role != %s", ('admin',))
+                count = cursor.fetchone()[0]
+        return jsonify({"count": count})
     except Exception as e:
-        return jsonify({"error": f"Error fetching data: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to fetch count: {str(e)}"}), 500
+
+
+
+
+
 
 
 # User Profile Management Routes (Add, Edit, Delete, Update)
-
 @users_bp.route('/add_user', methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
         username = request.form['username']
-        password = request.form['password']
+        password = request.form['password']  # Store this directly (insecure)
         role = request.form['role']
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         other_name = request.form['other_name']
-        
+
         # Handle profile image upload (if present)
         profile_image = None
         if 'profile_image' in request.files:
@@ -116,9 +149,7 @@ def add_user():
             if image_file and allowed_file(image_file.filename):
                 profile_image = handle_image_upload(image_file)
 
-        # Password hashing for security
-        hashed_password = generate_password_hash(password)
-
+        # No password hashing here (insecure)
         with get_db_connection() as connection:
             with connection.cursor() as cursor:
                 # Check if the username already exists
@@ -128,19 +159,20 @@ def add_user():
                     return render_template('accounts/add_user.html', role=session.get('role'), username=session.get('username'))
 
                 try:
-                    cursor.execute(''' 
+                    cursor.execute('''
                         INSERT INTO users (username, password, role, first_name, last_name, other_name, profile_image)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ''', (username, hashed_password, role, first_name, last_name, other_name, profile_image))
+                    ''', (username, password, role, first_name, last_name, other_name, profile_image))
                     connection.commit()
                     flash('User added successfully!', 'success')
                 except mysql.connector.Error as err:
                     flash(f'Error: {err}', 'danger')
 
-        return redirect(url_for('main.index'))  # Redirect to user management page
+        return redirect(url_for('main.index'))
 
     template = 'accounts/add_user.html' if session['role'] == 'admin' else 'accounts/moderator/add_user.html'
     return render_template(template, role=session.get('role'), username=session.get('username'))
+
 
 # Image upload helper function
 def handle_image_upload(image_file):
@@ -195,12 +227,12 @@ def edit_user(id):
                 # Update the user information in the database
                 try:
                     cursor.execute('''
-                        UPDATE users 
-                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, role = %s, 
-                            profile_image = %s, a_internal_role = %s, a_external_role = %s 
+                        UPDATE users
+                        SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, role = %s,
+                            profile_image = %s, a_internal_role = %s, a_external_role = %s
                         WHERE id = %s
                     ''', (
-                        username, first_name, last_name, other_name, hashed_password, role, 
+                        username, first_name, last_name, other_name, hashed_password, role,
                         profile_image_path, a_internal_role, a_external_role, id
                     ))
                     connection.commit()
@@ -219,7 +251,7 @@ def edit_user(id):
 
 
 
-    
+
 
 def get_user_password(cursor, user_id):
     cursor.execute('SELECT password FROM users WHERE id = %s', (user_id,))
@@ -260,7 +292,7 @@ def delete_user(id):
 def edit_user_profile(id):
     with get_db_connection() as connection:
         with connection.cursor(dictionary=True) as cursor:
-            
+
             # POST request - Handle profile update
             if request.method == 'POST':
                 # Collect form data
@@ -273,14 +305,14 @@ def edit_user_profile(id):
 
                 # Hash new password if provided; otherwise, keep the current password
                 hashed_password = generate_password_hash(password) if password else get_user_password(cursor, id)
-                
+
                 # Process profile image
                 profile_image_path = handle_profile_image(cursor, profile_image, id)
 
                 try:
                     # Update user details in the database
                     cursor.execute('''
-                        UPDATE users 
+                        UPDATE users
                         SET username = %s, first_name = %s, last_name = %s, other_name = %s, password = %s, profile_image = %s
                         WHERE id = %s
                     ''', (username, first_name, last_name, other_name, hashed_password, profile_image_path, id))
